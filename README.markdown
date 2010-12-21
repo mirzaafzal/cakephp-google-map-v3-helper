@@ -46,7 +46,7 @@ Add this to your view:
 	<?php
 		echo '<script type="text/javascript" src="'.$this->GoogleMap->apiUrl().'"></script>';
 	?>
-Or use "autoScripts" => true for the next step.
+Or use "autoScript" => true for the next step.
 
 Firstly create a div for google map. Give it a css height and width:
 
