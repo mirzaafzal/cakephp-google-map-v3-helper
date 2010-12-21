@@ -17,8 +17,94 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 	function testObject() {
 		$this->assertTrue(is_a($this->GoogleMap, 'GoogleMapV3Helper'));
 	}
+	
+	function testStaticPaths() {
+		echo '<h3>Paths</h3>';
+		$m = $this->pathElements = array(
+			array(
+				'path' => array('Berlin', 'Stuttgart'),
+				'color' => 'green',
+			),
+			array(
+				'path' => array('44.2,11.1', '43.1,12.2', '44.3,11.3', '43.3,12.3'),
+			),
+			array(
+				'path' => array(array('lat'=>'48.1','lng'=>'11.1'), array('lat'=>'48.4','lng'=>'11.2')), //'Frankfurt'
+				'color' => 'red',
+				'weight' => 10
+			)
+		);
+		
+		$is = $this->GoogleMap->staticPaths($m);
+		echo pr(h($is));
+		
+		
+		$options = array(
+			'paths' => $is
+		);
+		$is = $this->GoogleMap->staticMapLink($options);
+		echo h($is);
+		
+		$is = $this->GoogleMap->staticMap($options);
+		echo $is;
+	}
+	
+	function testStaticMarkers() {
+		echo '<h3>Markers</h3>';
+		$m = $this->markerElements = array(
+			array(
+				'address' => '44.3,11.2',
+			),
+			array(
+				'address' => '44.2,11.1',
+			)
+		);
+		$is = $this->GoogleMap->staticMarkers($m, array('color'=>'red', 'char'=>'C', 'shadow'=>'false'));
+		echo returns(h($is));
+		
+		$options = array(
+			'markers' => $is
+		);
+		$is = $this->GoogleMap->staticMap($options);
+		echo h($is);
+		echo $is;
+	}
+		
+//	http://maps.google.com/staticmap?size=500x500&maptype=hybrid&markers=color:red|label:S|48.3,11.2&sensor=false
+//	http://maps.google.com/maps/api/staticmap?size=512x512&maptype=roadmap&markers=color:blue|label:S|40.702147,-74.015794&markers=color:green|label:G|40.711614,-74.012318&markers=color:red|color:red|label:C|40.718217,-73.998284&sensor=false	
 		
 	function testStatic() {
+		echo '<h3>StaticMap</h3>';
+		$m = array(
+			array(
+				'address' => 'Berlin',
+				'color' => 'yellow',
+				'char' => 'Z',
+				'shadow' => 'true'
+			),
+			array(
+				'lat' => '44.2',
+				'lng' => '11.1',
+				'color' => '#0000FF',
+				'char' => '1',
+				'shadow' => 'false'
+			)
+		);
+		
+		$options = array(
+			'markers' => $this->GoogleMap->staticMarkers($m)
+		);
+		echo returns(h($options['markers'])).BR;
+		
+		$is = $this->GoogleMap->staticMapLink($options);
+		echo h($is);
+		echo BR;
+		
+		$is = $this->GoogleMap->staticMap($options);
+		echo h($is).BR;
+		echo $is;
+		echo BR.BR;
+		
 		$options = array(
 			'size' => '200x100',
 			'center' => true
@@ -38,7 +124,13 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 		echo h($url);
 		echo BR.BR;
 		
-		unset($options['size']);
+		$pos = array(
+			array('lat'=>48.1, 'lng'=>'11.1'),
+			array('lat'=>48.2, 'lng'=>'11.2'),
+		);
+		$options = array(
+			'markers' => $this->GoogleMap->staticMarkers($pos)
+		);
 		$attr = array('url'=>$this->GoogleMap->link(array('to'=>'Munich, Germany')));
 		$is = $this->GoogleMap->staticMap($options, $attr);
 		echo h($is).BR;

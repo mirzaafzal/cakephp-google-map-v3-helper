@@ -24,17 +24,20 @@ class GoogleMapV3Helper extends AppHelper {
 	public static $INFO_WINDOW_COUNT;
 
 	const API = 'http://maps.google.com/maps/api/js?';
+	const STATIC_API = 'http://maps.google.com/maps/api/staticmap?';
 
 	public $types = array('R'=>'ROADMAP','H'=>'HYBRID','S'=>'SATELLITE', 'T'=>'TERRAIN');
-	private $key = null; # not needed anymore in v3?
+	//private $key = null; # not needed anymore in v3?
 	private $api = null;
 
 	public function __construct() {
 		# read constum config settings
 		$google = (array)Configure::read('Google');
+		/*
 		if (!empty($google['key'])) {
 			$this->key = $google['key']; # needed in v3?
 		}
+		*/
 		if (!empty($google['api'])) {
 			$this->api = $google['api']; # needed in v3?
 		}
@@ -179,9 +182,11 @@ class GoogleMapV3Helper extends AppHelper {
 		if (!empty($language)) {
 			$url .= '&language='.$language;
 		}
+		/*
 		if (!empty($this->key)) {
 			$url .= '&key='.$this->key;
 		}
+		*/
 		if (!empty($this->api)) {
 			$url .= '&v='.$this->api;
 		}
@@ -570,20 +575,22 @@ class GoogleMapV3Helper extends AppHelper {
 
 /** STATIC MAP **/
 
-# Beachten Sie, dass diese URL am Zeichen "\" umbrochen wird.
-# Sie können die URL jedoch auch aus dem nachfolgenden Bild kopieren.
-# Der Übersichtlichkeit halber ist der aktuell verwendete API-Schlüssel nicht enthalten.
-/** http://maps.google.com/staticmap?center=40.714728,-73.998672&zoom=14&size=512x512&maptype=mobile&markers=40.702147,-74.015794,blues%7C40.711614,-74.012318,greeng%7C40.718217,-73.998284,redc&key=MAPS_API_KEY&sensor=false **/
+/** http://maps.google.com/staticmap?center=40.714728,-73.998672&zoom=14&size=512x512&maptype=mobile&markers=40.702147,-74.015794,blues%7C40.711614,-74.012318,greeng%7C40.718217,-73.998284,redc&mobile=true&sensor=false **/
 
 
 	/**
 	 * Create a plain image map
+	 * @link http://code.google.com/intl/de-DE/apis/maps/documentation/staticmaps
 	 * @param options:
-	 * - size [NECCESSARY: VALxVAL, e.g. 500x400]
-	 * - center: x,y [NECCESSARY, if no markers are given; else tries to take defaults if available] or TRUE/FALSE
-	 * - int/string zoom [optional; if no markers are given, default value is used; if set to "auto" and ]*
-	 * - markers [optional, separated by | (pipe)]
-	 * - maptype [optional: roadmap/mobile; default:roadmap]
+	 * - string $size [NECCESSARY: VALxVAL, e.g. 500x400 - max 640x640]
+	 * - string $center: x,y or address [NECCESSARY, if no markers are given; else tries to take defaults if available] or TRUE/FALSE
+	 * - int $zoom [optional; if no markers are given, default value is used; if set to "auto" and ]*
+	 * - array $markers [optional, @see staticPaths() method]
+	 * - string $type [optional: roadmap/hybrid, ...; default:roadmap]
+	 * - string $mobile TRUE/FALSE
+	 * - string $visible: $area (x|y|...)
+	 * - array $paths [optional, @see staticPaths() method]
+	 * - string $language [optional]
 	 * @param array $attributes: html attributes for the image
 	 * - title
 	 * - alt (defaults to 'Map')
@@ -605,34 +612,52 @@ class GoogleMapV3Helper extends AppHelper {
 	 * 2010-12-18 ms
 	 */
 	function staticMapLink($options = array()) {
-		$map = 'http://maps.google.com/staticmap?';
-		$params = array();
-		$params['sensor'] = 'false';
-		$params['key'] = $this->key;
+		$map = self::STATIC_API;
+		$params = array(
+			'sensor' => 'false',
+			'mobile' => 'false',
+			'format' => 'png',
+			//'center' => false
+		);
+
 		if (!empty($options['sensor'])) {
 			$params['sensor'] = 'true';
+		}
+		if (!empty($options['mobile'])) {
+			$params['mobile'] = 'true';
+		}
+		# do we want zoom to auto-correct itself?
+		if (!isset($options['zoom']) && !empty($options['markers'])|| !empty($options['paths']) || !empty($options['visible'])) {
+			$options['zoom'] = 'auto';
 		}
 		
 		$defaults = $this->_defaultOptions['map'];
 		$defaults = array_merge($defaults, $this->_defaultOptions['staticMap'], $options);
 		$options = array_merge($defaults, $options);
 
+		if (!empty($options['visible'])) {
+			$params['visible'] = urlencode($options['visible']);
+		}
+
+		# center and zoom are not necccessary if path, visible or markers are given
 		if (!isset($options['center']) || $options['center'] === false) {
 			# dont use it
 		} elseif ($options['center'] === true && $defaults['lat'] !== null && $defaults['lng'] !== null) {
 			$params['center'] = (string)$defaults['lat'].','.(string)$defaults['lng'];
 		} elseif (!empty($options['center'])) {
-			$params['center'] = $options['center'];
-		} else {
+			$params['center'] = urlencode($options['center']);
+		} /*else {
 			# try to read from markers array???
 			if (isset($options['markers']) && count($options['markers']) == 1) {
 				//pr ($options['markers']);
 			}
-		}
+		}*/
 
-		if (!empty($options['zoom'])) {
+		if (!isset($options['zoom']) || $options['zoom'] === false) {
+			# dont use it
+		} else if (!empty($options['zoom'])) {
 			if ($options['zoom'] == 'auto') {
-				if (!empty($options['markers']) && substr_count($options['zoom'],'|') > 0) {
+				if (!empty($options['markers']) && strpos($options['zoom'],'|') !== false) {
 					# let google find the best zoom value itself
 				} else {
 					# do something here?
@@ -643,14 +668,25 @@ class GoogleMapV3Helper extends AppHelper {
 		} else {
 			$params['zoom'] = $defaults['zoom'];
 		}
-
-		if (!empty($options['maptype'])) {
-			$params['maptype'] = $options['maptype'];
+		
+		
+		if (array_key_exists($options['type'], $this->types)) {
+			$params['maptype'] = $this->types[$options['type']];
+		} else {
+			$params['maptype'] = $options['type'];
 		}
+		//unset($options['type']);
+		$params['maptype'] = strtolower($params['maptype']);
+	
 
-		# {latitude},{longitude},{color}{alpha-character}
+		# old: {latitude},{longitude},{color}{alpha-character}
+		# new: @see staticMarkers()
 		if (!empty($options['markers'])) {
 			$params['markers'] = $options['markers'];
+		}
+		
+		if (!empty($options['paths'])) {
+			$params['path'] = $options['paths'];
 		}
 
 		# valXval
@@ -659,40 +695,166 @@ class GoogleMapV3Helper extends AppHelper {
 		}
 
 		foreach ($params as $key => $value) {
+			if (is_array($value)) {
+				$value = implode('&'.$key.'=', $value);
+			}
 			$map .= $key.'='.$value.'&';
 		}
 		return $map;
 	}
 
-
 	/**
-	 * prepare markers for staticMap
-	 * @param array $positions
-	 * - lat: xx.xxxxxx (NECCESSARY)
-	 * - lng: xx.xxxxxx (NECCESSARY)
+	 * prepare paths for staticMap
+	 * @param array $pathElementArrays
+	 * - elements: [required] (multiple array(lat=>x, lng=>y) or just a address strings)
 	 * - color: red/blue/green (optional, default blue)
-	 * - char: a-z (optional, default s)
-	 * @return string $markers: e.g: 40.702147,-74.015794,blues|40.711614,-74.012318,greeng{|...}
+	 * - weight: numeric (optional, default: 5)
+	 * @return string $paths: e.g: color:0x0000FF80|weight:5|37.40303,-122.08334|37.39471,-122.07201|37.40589,-122.06171{|...}
 	 * 2010-12-18 ms
 	 */
-	function staticMarkers($pos = array()) {
-		//$markers = 'markers=';
+	function staticPaths($pos = array()) {
+		$defaults = array(
+			'color' => 'blue',
+			'weight' => 5 # pixel
+		);
+		
+	
+		# not a 2-level array? make it one
+		if (!isset($pos[0])) {
+			$pos = array($pos);
+		}	
+		
+		$res = array();
 		foreach ($pos as $p) {
-			$lat = (is_numeric($p['lat'])?$p['lat']:null);
-			$lng = (is_numeric($p['lng'])?$p['lng']:null);
-			$color = (!empty($p['color'])?$p['color']:'blue');
-			$char = (!empty($p['char'])?$p['char']:'');
-
-			if ($lat == null || $lng == null) { continue; }
-			$params[] = $lat.','.$lng.','.$color.''.$char;
+			$options = array_merge($defaults, $p);
+		
+			$markers = $options['path'];
+			unset($options['path']);
+		
+			# prepare color
+			if (!empty($options['color'])) {
+				$options['color'] = $this->_prepColor($options['color']);
+			}
+			
+			$path = array();
+			foreach ($options as $key => $value) {
+				$path[] = $key.':'.urlencode($value);
+			}
+			foreach ($markers as $key => $pos) {
+				if (is_array($pos)) {
+					# lat/lng?
+					$pos = $pos['lat'].','.$pos['lng'];
+				}
+				$path[] = $pos;
+			}	
+			$res[] = implode('|', $path);
 		}
-
-		$markers = implode('|', $params);
+		return $res;
+	}
+	
+	/**
+	 * prepare markers for staticMap
+	 * @param array $markerArrays
+	 * - lat: xx.xxxxxx (NECCESSARY)
+	 * - lng: xx.xxxxxx (NECCESSARY)
+	 * - address: (instead of lat/lng)
+	 * - color: red/blue/green (optional, default blue)
+	 * - label: a-z or numbers (optional, default: s)
+	 * - icon: custom icon (png, gif, jpg - max 64x64 - max 5 different icons per image)
+	 * - shadow: TRUE/FALSE
+	 * @param style (global) (overridden by custom marker styles)
+	 * - color
+	 * - label
+	 * - icon
+	 * - shadow
+	 * @return array $markers: color:green|label:Z|48,11|Berlin
+	 * 
+	 * NEW: size:mid|color:red|label:E|37.400465,-122.073003|37.437328,-122.159928&markers=size:small|color:blue|37.369110,-122.096034 
+	 * OLD: 40.702147,-74.015794,blueS|40.711614,-74.012318,greenG{|...}
+	 * 2010-12-18 ms
+	 */
+	function staticMarkers($pos = array(), $style = array()) {
+		$markers = array();
+		$verbose = false;
+		
+		$defaults = array(
+			'shadow' => 'true',
+			'color' => 'blue',
+			'label' => '',
+			'address' => '',
+			'size' => ''
+		);
+		
+		# not a 2-level array? make it one
+		if (!isset($pos[0])) {
+			$pos = array($pos);
+		}
+		
+		# new in statitV2: separate styles! right now just merged
+		
+		foreach ($pos as $p) {
+			$p = array_merge($defaults, $style, $p);
+			
+			# adress or lat/lng?
+			if (!empty($p['lat']) && !empty($p['lng'])) {
+				$p['address'] = $p['lat'].','.$p['lng'];
+			} else {
+				$p['address'] = $p['address'];
+			}
+			$p['address'] = urlencode($p['address']);
+			
+			
+			$values = array();
+			
+			# prepare color
+			if (!empty($p['color'])) {
+				$p['color'] = $this->_prepColor($p['color']);
+				$values[] = 'color:'.$p['color'];
+			}
+			# label? A-Z0-9
+			if (!empty($p['label'])) {
+				$values[] = 'label:'.strtoupper($p['label']);
+			}
+			if (!empty($p['size'])) {
+				$values[] = 'size:'.$p['size'];
+			}
+			if (!empty($p['shadow'])) {
+				$values[] = 'shadow:'.$p['shadow'];
+			}
+			if (!empty($p['icon'])) {
+				$values[] = 'icon:'.urlencode($p['icon']);
+			}
+			$values[] = $p['address'];				
+			
+			//TODO: icons
+			$markers[] = implode('|', $values);
+		}
+		
+		//TODO: shortcut? only possible if no custom params!
+		if ($verbose) {
+			
+		}
+		// long: markers=styles1|address1&markers=styles2|address2&...
+		// short: markers=styles,address1|address2|address3|...
 
 		return $markers;
 	}
 
-
+	/**
+	 * # to 0x
+	 * or # added
+	 * @param string $color: FFFFFF, #FFFFFF, 0xFFFFFF or blue
+	 * @return string $color
+	 * 2010-12-20 ms
+	 */
+	private function _prepColor($color) {
+		if (strpos($color, '#') !== false) {
+			return str_replace('#', '0x', $color);
+		} elseif (is_numeric($color)) {
+			return '0x'.$color;
+		}
+		return $color;
+	} 
 
 
 /** TODOS/EXP **/

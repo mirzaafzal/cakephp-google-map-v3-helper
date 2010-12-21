@@ -66,8 +66,8 @@ Firstly create a div for google map. Give it a css height and width:
 	To add a marker to the google maps pass an associative array
 	<?php  
 		$options = array(
-	    'latitude'=>48.95145,
-  		'longitude'=>11.6981,
+	    'lat'=>48.95145,
+  		'lng'=>11.6981,
 			'icon'=> 'url_to_icon', # optional
 			'title' => 'Some title', # optional
 			'content' => '<b>HTML</b> Content for the Bubble/InfoWindow' # optional
@@ -76,8 +76,8 @@ Firstly create a div for google map. Give it a css height and width:
 		//To add more than one marker use this multiple time
 		// I use it inside a for loop for multile markers
 		$this->GoogleMapV3->addMarker($options);
-	?>		 
-
+	?>
+	
 ### 2. (OPTIONAL) Adding single/multiple infowindow
 
 	<?php 
@@ -139,6 +139,10 @@ finally, now time to make the script
 		$attr['url'] = $this->GoogleMap->link(array('to'=>'Munich, Germany'));
 		echo $this->GoogleMap->staticMap($options, $attr);
 	?>
+Instead of markers, paths can also be used.
+Other options
+- visible (locations that have to be in the map)
+- center (without markers)
 	
 	
 Test Files
