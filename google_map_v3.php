@@ -105,15 +105,14 @@ class GoogleMapV3Helper extends AppHelper {
 			'mapTypeControl' => true,
 			'scaleControl' => true,
 			'scrollwheel' => false,
+			'keyboardShortcuts' => true,
 			'zoom' =>5,
 			'type' =>'R',
+			'lat' => 51,
+			'lng' => 11,
 			'typeOptions' => array(),
 			'navOptions' => array(),
 			'scaleOptions' => array(),
-			'lat' => 51,
-			'lng' => 11,
-			'keyboardShortcuts' => true,
-			'scaleControl' => true
 		),
 		'staticMap' => array(
 			'size' => '300x300',
@@ -240,9 +239,14 @@ class GoogleMapV3Helper extends AppHelper {
 		$this->reset();
 		$options = $this->_currentOptions = Set::merge($this->_defaultOptions, $options);
 
+		# autoinclude js?
 		if (!empty($options['autoScript'])) {
-			$this->Html->script($this->apiUrl(), array('inline'=>false));
+			$this->Html->script($this->apiUrl(), array('inline'=>true));
+			
+			# usually already included 
 			//http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js
+			
+			# still not very common: http://code.google.com/intl/de-DE/apis/maps/documentation/javascript/basics.html
 			//http://code.google.com/apis/gears/gears_init.js
 		}
 
@@ -259,7 +263,7 @@ class GoogleMapV3Helper extends AppHelper {
 		#rename "map_canvas" to "map_canvas1", ... if multiple maps on one page
 		if (in_array($options['div']['id'], $this->mapIds)) {
 			$options['div']['id'] .= '-1'; //TODO: improve
-			$this->_currentOptions = $options['div']['id'];
+			$this->_currentOptions['div']['id'] = $options['div']['id'];
 		}
 		$this->mapIds[] = $options['div']['id'];
 
