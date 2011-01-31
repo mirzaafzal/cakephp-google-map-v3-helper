@@ -42,9 +42,9 @@ Load Helper
 Usage
 ------------
 
-Add this to your view:
+Add this to your view (it assumes you already included Jquery!!! If you didnt yet, do that before including the following snippet):
 	<?php
-		echo '<script type="text/javascript" src="'.$this->GoogleMap->apiUrl().'"></script>';
+		echo '<script type="text/javascript" src="'.$this->GoogleMapV3->apiUrl().'"></script>';
 	?>
 Or use "autoScript" => true for the next step.
 
