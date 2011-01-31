@@ -158,3 +158,10 @@ the test file in
 
 open the following url in the browser:
 http://yourdomain/test.php?show=cases&plugin=tools
+
+There you will be able to click on the GoogleMapV3 Test File.
+
+Testfiles are not only a great tool to ensure that the code is fine, it also may help in understanding how the code works.
+So please at least take a look at the code in the test file in order to understand how to use it :)
+If it still doesn't work, feel free to contact me. Also notify me about any mistake i made or enhancement you got! 
+I will be happy to upgrade my code (you may fork the project and send me a direct pull request, as well).
