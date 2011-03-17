@@ -1,6 +1,16 @@
 CakePHP google map v3 helper / wrapper
 ======================================
+v1.1 !!! not backwards compatible to v1.0
 
+most important changes
+- link() creates now actual links - use url() for urls
+- usage of array containers in order to use custom js more easily 
+- geolocate-feature for state-of-the-art-browsers
+- custom icons
+
+for most current manual see
+- http://www.dereuromark.de/2010/12/21/googlemapsv3-cakephp-helper/
+- the test case (contains several use cases!)
 
 Introduction
 ------------
@@ -14,7 +24,7 @@ CakePHP 1.3
 The script depends on using jquery, so please add jquery to the layout
 or add it from
    
-   https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js
+   http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js
    
    
 Load Helper
@@ -74,16 +84,16 @@ Firstly create a div for google map. Give it a css height and width:
 		);
 
 		//To add more than one marker use this multiple time
-		// I use it inside a for loop for multile markers
+		// I use it inside a for loop for multiple markers
 		$this->GoogleMapV3->addMarker($options);
-	?>
-	
+	?>		 
+
 ### 2. (OPTIONAL) Adding single/multiple infowindow
 
 	<?php 
 		$options = array(
-		    'latitude'=>49.95144,
-    		'longitude'=>12.6981,
+		    'lat'=>49.95144,
+    		'lng'=>12.6981,
     		'content'=>'Thanks for using this'
 		);
 		
@@ -109,11 +119,21 @@ finally, now time to make the script
 	<?php echo $this->GoogleMapV3->script() ?>
 
 
+### addons and extended functionality
+
+- custom javascript (for special click events and stuff)
+- custom icons
+- ...
+
+
 ### 4. Map Links
 
 	<?php 
-		$url = $this->GoogleMap->link(array('to'=>'Munich, Germany'));
+		$url = $this->GoogleMapV3->url(array('to'=>'Munich, Germany'));
 		echo $this->Html->link('Visit Me', $url, array('target'=>'_blank'));
+		
+		# or directly:
+		echo $this->GoogleMapV3->link('Visit Me', array('to'=>'Munich, Germany', 'from'=>'Berlin, Germany'), array('target'=>'_blank'));
 	?>
 	
 	
@@ -128,16 +148,16 @@ finally, now time to make the script
 		$options = array(
 			'size' => '500x400',
 			'center' => true,
-			'markers' => $this->GoogleMap->staticMarkers($markers)
+			'markers' => $this->GoogleMapV3->staticMarkers($markers)
 		);
 		$attr = array(
 			'title'=>'Yeah'
 		);
-		echo $this->GoogleMap->staticMap($options, $attr);
+		echo $this->GoogleMapV3->staticMap($options, $attr);
 		
 		# you can even add an url to click on
-		$attr['url'] = $this->GoogleMap->link(array('to'=>'Munich, Germany'));
-		echo $this->GoogleMap->staticMap($options, $attr);
+		$attr['url'] = $this->GoogleMapV3->url(array('to'=>'Munich, Germany'));
+		echo $this->GoogleMapV3->staticMap($options, $attr);
 	?>
 Instead of markers, paths can also be used.
 Other options
@@ -160,6 +180,9 @@ open the following url in the browser:
 http://yourdomain/test.php?show=cases&plugin=tools
 
 There you will be able to click on the GoogleMapV3 Test File.
+
+If you want to test MY exact file you will need to change the class from MyCakeTestCase back to CakeTestCase.
+Maybe some more modification will have to be made. So you can just as well create your own little test case and use mine as guideline :)
 
 Testfiles are not only a great tool to ensure that the code is fine, it also may help in understanding how the code works.
 So please at least take a look at the code in the test file in order to understand how to use it :)
