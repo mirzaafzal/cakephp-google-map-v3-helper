@@ -417,6 +417,8 @@ class GoogleMapV3Helper extends AppHelper {
 		
 
 		$params = array();
+		$params['map'] = $this->name();
+		
 		if (isset($options['title'])) {
 			$params['title'] = '\''.$options['title'].'\'';
 		}
@@ -440,10 +442,10 @@ class GoogleMapV3Helper extends AppHelper {
 		if (isset($options['zIndex'])) {
 			$params['zIndex'] = $options['zIndex'];
 		}
+						
 		$marker = "
 			var x".self::$MARKER_COUNT." = new google.maps.Marker({
 				position: new google.maps.LatLng(".$options['lat'].",".$options['lng']."),
-				map: ".$this->name().",
 				".$this->_toObjectParams($params, false, false)."
 			});
 			gMarkers".self::$MAP_COUNT.".push(
