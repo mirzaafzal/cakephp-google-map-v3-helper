@@ -109,7 +109,7 @@ class GoogleMapV3Helper extends AppHelper {
 		'infoWindow' => array(
 			'content'=>'',
 			'useMultiple'=>false, # Using single infowindow object for all
-			'maxWidth'=>200,
+			'maxWidth'=>300,
 			'lat'=>null,
 			'lng'=>null,
 			'pixelOffset' => 0,
@@ -125,6 +125,7 @@ class GoogleMapV3Helper extends AppHelper {
 			'zIndex' => null,
 			'draggable' => false,
 			'cursor' => null,
+			'directions' => false # add form with directions
 		),
 		'div'=>array(
 			'id'=>'map_canvas',
@@ -393,7 +394,7 @@ class GoogleMapV3Helper extends AppHelper {
 
 	/**
 	 * @param array $options
-	 * - lat, lng, title
+	 * - lat, lng, title, content, icon, directions
 	 * @return int $markerCount or false on failure
 	 * 2010-12-18 ms
 	 */
@@ -453,6 +454,10 @@ class GoogleMapV3Helper extends AppHelper {
 			);
 		";
 		$this->map.= $marker;
+		
+		if (!empty($options['directions'])) {
+			$options['content'] .= $this->_directions($options['directions'], $options);
+		}
 
 		if (!empty($options['content']) && $this->_currentOptions['infoWindow']['useMultiple']) {
 			$x = $this->addInfoWindow(array('content'=>$options['content']));
@@ -506,11 +511,57 @@ class GoogleMapV3Helper extends AppHelper {
 		return self::$MARKER_COUNT++;
 	}
 
+	/**
+	 * build directions form (type get) for directions inside infoWindows
+	 * @param mixed $directions
+	 * - bool TRUE for autoDirections (using lat/lng)
+	 * @param array $options
+	 * - options array of marker for autoDirections etc (optional)
+	 * 2011-03-22 ms
+	 */
+	function _directions($directions, $markerOptions = array()) {
+		$options = array(
+			'from' => null,
+			'to' => null,
+			'label' => __('Enter your address', true),
+			'submit' => __('Get directions', true),
+			'escape' => true,
+			'zoom' => null, # auto
+		);
+		if ($directions === true) {
+			$options['to'] = $markerOptions['lat'].','.$markerOptions['lng'];
+		} elseif (is_array($directions)) {
+			$options = array_merge($options, $directions);
+		}
+		if (empty($options['to']) && empty($options['from'])) {
+			return '';
+		}
+		$form = '<form action="http://maps.google.com/maps" method="get" target="_blank">';
+		$form .= $options['escape'] ? h($options['label']) : $options['label'];
+		if (!empty($options['from'])) {
+			$form .= '<input type="hidden" name="saddr" value="'.$options['from'].'" />';
+		} else {
+			$form .= '<input type="text" name="saddr" />';
+		}
+		if (!empty($options['to'])) {
+			$form .= '<input type="hidden" name="daddr" value="'.$options['to'].'" />';
+		} else {
+			$form .= '<input type="text" name="daddr" />';
+		}
+		if (isset($options['zoom'])) {
+			$form .= '<input type="hidden" name="z" value="'.$options['zoom'].'" />';
+		}
+		$form .= '<input type="submit" value="'.$options['submit'].'" />';
+		$form .= '</form>';
+		
+		return '<div class="directions">'.$form.'</div>';
+	}
+
 
 	function addInfoContent($con) {
-		$this->infoContents[self::$MARKER_COUNT] = $this->Javascript->escapeScript($con);
+		$this->infoContents[self::$MARKER_COUNT] = $this->escapeString($con);
 		$event = "
-			gWindowContents".self::$MAP_COUNT.".push('".$this->Javascript->escapeScript($con)."');
+			gWindowContents".self::$MAP_COUNT.".push(".$this->escapeString($con).");
 			";
 		$this->addCustom($event);
 		
@@ -671,7 +722,7 @@ var iconShape = {
 			$windows = "
 			gInfoWindows".self::$MAP_COUNT.".push( new google.maps.InfoWindow({
 					position: {$position},
-					content: '".$this->Javascript->escapeString($options['content'])."',
+					content: ".$this->escapeString($options['content']).",
 					maxWidth: {$options['maxWidth']},
 					pixelOffset: {$options['pixelOffset']}
 					/*zIndex: {$options['zIndex']},*/
@@ -726,10 +777,13 @@ var iconShape = {
 	 */
 	public function setContentInfoWindow($con, $index) {
 		$this->map .= "
-			gInfoWindows".self::$MAP_COUNT."[$index].setContent('".$this->Javascript->escapeString($con)."');";
+			gInfoWindows".self::$MAP_COUNT."[$index].setContent(".$this->escapeString($con).");";
 	}
 
 
+	public function escapeString($content) {
+		return json_encode($content);
+	}
 
 
 	/**
