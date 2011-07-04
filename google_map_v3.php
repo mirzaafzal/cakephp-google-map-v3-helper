@@ -421,14 +421,14 @@ class GoogleMapV3Helper extends AppHelper {
 		$params['map'] = $this->name();
 		
 		if (isset($options['title'])) {
-			$params['title'] = '\''.$options['title'].'\'';
+			$params['title'] = json_encode($options['title']);
 		}
 		if (isset($options['icon'])) {
 			$params['icon'] = $options['icon'];
 			if (is_int($params['icon'])) {
 				$params['icon'] = 'gIcons'.self::$MAP_COUNT.'['.$params['icon'].']';
 			} else {
-				$params['icon'] = '\''.$params['icon'].'\'';
+				$params['icon'] = json_encode($params['icon']);
 			}
 		}
 		if (isset($options['shadow'])) {
