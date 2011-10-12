@@ -1,7 +1,7 @@
 <?php
 
 App::import('Helper', 'Tools.GoogleMapV3');
-App::import('Vendor', 'MyCakeTestCase');
+App::import('Lib', 'Tools.MyCakeTestCase');
 
 class GoogleMapHelperTest extends MyCakeTestCase {
 
@@ -33,7 +33,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 	}
 	
 	function testStaticPaths() {
-		echo '<h3>Paths</h3>';
+		echo '<h2>Paths</h2>';
 		$m = $this->pathElements = array(
 			array(
 				'path' => array('Berlin', 'Stuttgart'),
@@ -64,7 +64,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 	}
 
 	function testStaticMarkers() {
-		echo '<h3>Markers</h3>';
+		echo '<h2>Markers</h2>';
 		$m = $this->markerElements = array(
 			array(
 				'address' => '44.3,11.2',
@@ -89,7 +89,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 //	http://maps.google.com/maps/api/staticmap?size=512x512&maptype=roadmap&markers=color:blue|label:S|40.702147,-74.015794&markers=color:green|label:G|40.711614,-74.012318&markers=color:red|color:red|label:C|40.718217,-73.998284&sensor=false
 
 	function testStatic() {
-		echo '<h3>StaticMap</h3>';
+		echo '<h2>StaticMap</h2>';
 		$m = array(
 			array(
 				'address' => 'Berlin',
@@ -186,16 +186,18 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 	 * 2010-12-18 ms
 	 */
 	function testDynamic() {
-		echo '<h3>Map 1</h3>';
+		echo '<h2>Map 1</h2>';
 		echo '<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>';
 		//echo $this->GoogleMapV3->map($defaul, array('style'=>'width:100%; height: 800px'));
 		echo '<script type="text/javascript" src="'.$this->GoogleMapV3->apiUrl().'"></script>';
 		echo '<script type="text/javascript" src="'.$this->GoogleMapV3->gearsUrl().'"></script>';
 
 		$options = array(
+			'zoom'=>6, 
+			'type'=>'R', 
 			'geolocate' => true,
 			'div' => array('id'=>'someothers'),
-			'map' => array('zoom'=>6, 'type'=>'R', 'navOptions'=>array('style'=>'SMALL'), 'typeOptions' => array('style'=>'HORIZONTAL_BAR', 'pos'=>'RIGHT_CENTER'))
+			'map' => array('navOptions'=>array('style'=>'SMALL'), 'typeOptions' => array('style'=>'HORIZONTAL_BAR', 'pos'=>'RIGHT_CENTER'))
 		);
 		$result = $this->GoogleMapV3->map($options);
 		$this->GoogleMapV3->addMarker(array('lat'=>48.69847,'lng'=>10.9514, 'title'=>'Marker', 'content'=>'Some Html-<b>Content</b>', 'icon'=>$this->GoogleMapV3->iconSet('green', 'E')));
@@ -226,11 +228,12 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 	 * 2010-12-18 ms
 	 */
 	function testDynamic2() {
-		echo '<h3>Map 2</h3>';
+		echo '<h2>Map 2</h2>';
 		$options = array(
+			'zoom'=>6, 'type'=>'H', 
 			'autoCenter' => true,
 			'div' => array('id'=>'someother'), //'height'=>'111', 
-			'map' => array('zoom'=>6, 'type'=>'H', 'typeOptions' => array('style'=>'DROPDOWN_MENU'))
+			'map' => array('typeOptions' => array('style'=>'DROPDOWN_MENU'))
 		);
 		echo $this->GoogleMapV3->map($options);
 		$this->GoogleMapV3->addMarker(array('lat'=>47.69847,'lng'=>11.9514, 'title'=>'MarkerMUC', 'content'=>'Some more Html-<b>Content</b>'));
@@ -263,4 +266,26 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 		echo '<a href="javascript:void(0)" class="mapAnchor" rel="m3">Marker3</a>';
 	}
 
+
+	function testDynamic3() {
+		echo '<h2>Map with Directions</h2>';
+		$options = array(
+			'zoom'=>5, 
+			'type'=>'H',
+			'map' => array()
+		);
+		echo $this->GoogleMapV3->map($options);
+		
+		
+		
+		$this->GoogleMapV3->addMarker(array('lat'=>48.69847,'lng'=>10.9514, 'content'=>'<b>Bla</b>', 'title'=>'NoDirections'));
+		
+		$this->GoogleMapV3->addMarker(array('lat'=>47.69847,'lng'=>11.9514, 'title'=>'AutoToDirections', 'content'=>'<b>Bla</b>', 'directions'=>true));
+		
+		$this->GoogleMapV3->addMarker(array('lat'=>46.69847,'lng'=>11.9514, 'title'=>'ManuelToDirections', 'content'=>'<b>Bla</b>', 'directions'=>array('to'=>'Munich, Germany')));
+		
+		$this->GoogleMapV3->addMarker(array('lat'=>45.69847,'lng'=>11.9514, 'title'=>'ManuelFromDirections', 'content'=>'<b>Bla</b>', 'directions'=>array('from'=>'Munich, Germany')));
+	
+		echo $this->GoogleMapV3->script();
+	}
 }
