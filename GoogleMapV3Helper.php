@@ -5,7 +5,7 @@
  *
  * @author Rajib Ahmed
  * @version 0.10.12
- * 
+ *
  * enhanced/modified by Mark Scherer
  */
  /**
@@ -15,14 +15,14 @@
  * @link          http://www.dereuromark.de/2010/12/21/googlemapsv3-cakephp-helper/
  * @package       tools plugin
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
- * 
+ *
  * fixed brackets, spacesToTabs, indends, some improvements, supports multiple maps now.
  * now capable of resetting itself (full or partly) for multiple maps on a single view
- * 
+ *
  * CodeAPI: 		http://code.google.com/intl/de-DE/apis/maps/documentation/javascript/basics.html
  * Icons/Images: 	http://gmapicons.googlepages.com/home
- * 
- * v1.2 
+ *
+ * v1.2
  * 2011-10-12 ms
  */
 class GoogleMapV3Helper extends AppHelper {
@@ -35,7 +35,7 @@ class GoogleMapV3Helper extends AppHelper {
 
 	const API = 'http://maps.google.com/maps/api/js?';
 	const STATIC_API = 'http://maps.google.com/maps/api/staticmap?';
-	
+
 	const TYPE_ROADMAP = 'R';
 	const TYPE_HYBRID = 'H';
 	const TYPE_SATELLITE = 'S';
@@ -44,7 +44,7 @@ class GoogleMapV3Helper extends AppHelper {
 	public $types = array(
 		self::TYPE_ROADMAP => 'ROADMAP',
 		self::TYPE_HYBRID => 'HYBRID',
-		self::TYPE_SATELLITE => 'SATELLITE', 
+		self::TYPE_SATELLITE => 'SATELLITE',
 		self::TYPE_TERRAIN => 'TERRAIN'
 	);
 
@@ -53,7 +53,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 *
 	 * @var array
 	 */
-	public $helpers = array('Javascript', 'Html');
+	public $helpers = array('Html', 'Js');
 
 	/**
 	 * google maker config instance variable
@@ -63,14 +63,14 @@ class GoogleMapV3Helper extends AppHelper {
 	public $markers = array();
 
 	public $infoWindows = array();
-	
+
 	public $infoContents = array();
-	
+
 	public $icons = array();
-	
+
 	public $matching = array();
 	//public $iconMatching = array();
-	
+
 	public $map = '';
 
 	protected $_mapIds = array(); # remember already used ones (valid xhtml contains ids not more than once)
@@ -83,7 +83,7 @@ class GoogleMapV3Helper extends AppHelper {
 		'zoom' =>null, # global, both map and staticMap
 		'lat' => null, # global, both map and staticMap
 		'lng' => null, # global, both map and staticMap
-		'type' => self::TYPE_ROADMAP,	
+		'type' => self::TYPE_ROADMAP,
 		'map'=>array(
 			'api' => null,
 			'streetViewControl' => false,
@@ -172,7 +172,9 @@ class GoogleMapV3Helper extends AppHelper {
 	protected $_located = false;
 
 
-	public function __construct() {
+	public function __construct($View = null, $settings = array()) {
+		parent::__construct($View);
+
 		# read constum config settings
 		$google = (array)Configure::read('Google');
 		if (!empty($google['api'])) {
@@ -225,7 +227,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 * @return string $fullUrl
 	 * 2009-03-09 ms
 	 */
-	function apiUrl($sensor = false, $api = null, $language = null, $append = null) {
+	public function apiUrl($sensor = false, $api = null, $language = null, $append = null) {
 		$url = self::API;
 
 		$url .= 'sensor=' . ($sensor ? 'true' : 'false');
@@ -249,13 +251,13 @@ class GoogleMapV3Helper extends AppHelper {
 		$this->_apiIncluded = true;
 		return $url;
 	}
-	
-	function gearsUrl() {
+
+	public function gearsUrl() {
 		$this->_gearsIncluded = true;
 		return 'http://code.google.com/apis/gears/gears_init.js';
 	}
-	
-	
+
+
 	/**
 	 * @return string $currentMapObject
 	 * 2010-12-18 ms
@@ -263,7 +265,7 @@ class GoogleMapV3Helper extends AppHelper {
 	public function name() {
 		return 'map'.self::$MAP_COUNT;
 	}
-	
+
 	/**
 	 * @return string $currentContainerId
 	 * 2010-12-18 ms
@@ -271,7 +273,7 @@ class GoogleMapV3Helper extends AppHelper {
 	public function id() {
 		return $this->_currentOptions['div']['id'];
 	}
-	
+
 	/**
 	 * make it possible to include multiple maps per page
 	 * resets markers, infoWindows etc
@@ -299,7 +301,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 *
 	 * 2011-03-15 ms
 	 */
-	function setControls($options = array()) {
+	public function setControls($options = array()) {
 		if (!empty($options['streetView'])) {
 			$this->_currentOptions['map']['streetViewControl'] = $options['streetView'];
 		}
@@ -343,7 +345,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 * @return string $divContainer
 	 * 2010-12-20 ms
 	 */
-	function map($options = array()) {
+	public function map($options = array()) {
 		$this->reset();
 		$this->_currentOptions = Set::merge($this->_currentOptions, $options);
 		$this->_currentOptions['map'] = array_merge($this->_currentOptions['map'], array('zoom'=>$this->_currentOptions['zoom'], 'lat' => $this->_currentOptions['lat'], 'lng' => $this->_currentOptions['lng'], 'type' => $this->_currentOptions['type']), $options);
@@ -351,15 +353,17 @@ class GoogleMapV3Helper extends AppHelper {
 			$this->_currentOptions['map']['lat'] = $this->_currentOptions['map']['defaultLat'];
 			$this->_currentOptions['map']['lng'] = $this->_currentOptions['map']['defaultLng'];
 			$this->_currentOptions['map']['zoom'] = $this->_currentOptions['map']['defaultZoom'];
+		} elseif (!$this->_currentOptions['map']['zoom']) {
+			$this->_currentOptions['map']['zoom'] = $this->_currentOptions['map']['defaultZoom'];
 		}
-		
+
 		# autoinclude js?
 		if (!empty($options['autoScript']) && !$this->_apiIncluded) {
 			$res = $this->Html->script($this->apiUrl(), array('inline'=>$options['inline']));
 			if ($options['inline']) {
 				echo $res;
 			}
-			# usually already included 
+			# usually already included
 			//http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js
 		}
 		# still not very common: http://code.google.com/intl/de-DE/apis/maps/documentation/javascript/basics.html
@@ -374,7 +378,7 @@ class GoogleMapV3Helper extends AppHelper {
 			var initialLocation = ".$this->_initialLocation().";
 			var browserSupportFlag =  new Boolean();
 			var myOptions = ".$this->_mapOptions().";
-			
+
 			// deprecated
 			gMarkers".self::$MAP_COUNT." = new Array();
 			gInfoWindows".self::$MAP_COUNT." = new Array();
@@ -400,19 +404,19 @@ class GoogleMapV3Helper extends AppHelper {
 		if (is_numeric($this->_currentOptions['div']['height'])) {
 			$this->_currentOptions['div']['height'] .= 'px';
 		}
-		
+
 		$this->_currentOptions['div']['style'] .= 'width: '.$this->_currentOptions['div']['width'].';';
 		$this->_currentOptions['div']['style'] .= 'height: '.$this->_currentOptions['div']['height'].';';
 		unset($this->_currentOptions['div']['width']); unset($this->_currentOptions['div']['height']);
 
-		$defaultText = isset($this->_currentOptions['content']) ? $this->_currentOptions['content'] : __('Map cannot be displayed!', true); 
+		$defaultText = isset($this->_currentOptions['content']) ? $this->_currentOptions['content'] : __('Map cannot be displayed!');
 		$result = $this->Html->tag('div', $defaultText, $this->_currentOptions['div']);
 
 		return $result;
 	}
 
 
-	function _initialLocation() {
+	public function _initialLocation() {
 		if ($this->_currentOptions['map']['lat'] && $this->_currentOptions['map']['lng']) {
 			return "new google.maps.LatLng(".$this->_currentOptions['map']['lat'].", ".$this->_currentOptions['map']['lng'].")";
 		}
@@ -426,11 +430,11 @@ class GoogleMapV3Helper extends AppHelper {
 	 * @return int $markerCount or false on failure
 	 * 2010-12-18 ms
 	 */
-	function addMarker($options) {
+	public function addMarker($options) {
 		if (empty($options)) {
 			return false;
 		}
-		if(!isset($options['lat']) || !isset($options['lng'])) {
+		if (!isset($options['lat']) || !isset($options['lng'])) {
 			return false;
 		};
 		if (!preg_match("/[-+]?\b[0-9]*\.?[0-9]+\b/", $options['lat']) || !preg_match("/[-+]?\b[0-9]*\.?[0-9]+\b/", $options['lng'])) {
@@ -443,11 +447,11 @@ class GoogleMapV3Helper extends AppHelper {
 			unset($options['icon']);
 		}
 		$options = array_merge($defaults, $options);
-		
+
 
 		$params = array();
 		$params['map'] = $this->name();
-		
+
 		if (isset($options['title'])) {
 			$params['title'] = json_encode($options['title']);
 		}
@@ -471,7 +475,7 @@ class GoogleMapV3Helper extends AppHelper {
 		if (isset($options['zIndex'])) {
 			$params['zIndex'] = $options['zIndex'];
 		}
-						
+
 		$marker = "
 			var x".self::$MARKER_COUNT." = new google.maps.Marker({
 				position: new google.maps.LatLng(".$options['lat'].",".$options['lng']."),
@@ -482,7 +486,7 @@ class GoogleMapV3Helper extends AppHelper {
 			);
 		";
 		$this->map.= $marker;
-		
+
 		if (!empty($options['directions'])) {
 			$options['content'] .= $this->_directions($options['directions'], $options);
 		}
@@ -512,18 +516,18 @@ class GoogleMapV3Helper extends AppHelper {
 			if (!isset($this->_currentOptions['marker']['infoWindow'])) {
 				$this->_currentOptions['marker']['infoWindow'] = $this->addInfoWindow();
 			}
-			
+
 			$x = $this->addInfoContent($options['content']);
-			
+
 			$event = "
 			gInfoWindows".self::$MAP_COUNT."[".$this->_currentOptions['marker']['infoWindow']."].setContent(gWindowContents".self::$MAP_COUNT."[".self::$MARKER_COUNT."]);
 			gInfoWindows".self::$MAP_COUNT."[".$this->_currentOptions['marker']['infoWindow']."].open(".$this->name().", gMarkers".self::$MAP_COUNT."[".self::$MARKER_COUNT."]);
 			";
 			$this->addCustomEvent(self::$MARKER_COUNT, $event);
 		}
-		
+
 		# custom matching event?
-		
+
 		if (isset($options['id'])) {
 			$this->matching[$options['id']] = self::$MARKER_COUNT;
 		}
@@ -531,7 +535,7 @@ class GoogleMapV3Helper extends AppHelper {
 		//$this->mapMarkers[$id] = ;
 		//$function = 'function() { '.$id.'.'.$call.'("'.$content.'");}';
 		$function = 'function() { mapMarkers[\''.$id.'\'].'.$call.'(mapWindows[\''.$id.'\']);}';
-		
+
 		$this->addListener($id, $function, isset($options['action'])?$options['action']:null);
 		//"gInfoWindows".self::$MAP_COUNT.".setContent(gWindowContents1[1]);
 		//"gInfoWindows".self::$MAP_COUNT.".open(map1, gMarkers1[1]);
@@ -547,12 +551,12 @@ class GoogleMapV3Helper extends AppHelper {
 	 * - options array of marker for autoDirections etc (optional)
 	 * 2011-03-22 ms
 	 */
-	function _directions($directions, $markerOptions = array()) {
+	public function _directions($directions, $markerOptions = array()) {
 		$options = array(
 			'from' => null,
 			'to' => null,
-			'label' => __('Enter your address', true),
-			'submit' => __('Get directions', true),
+			'label' => __('Enter your address'),
+			'submit' => __('Get directions'),
 			'escape' => true,
 			'zoom' => null, # auto
 		);
@@ -581,29 +585,29 @@ class GoogleMapV3Helper extends AppHelper {
 		}
 		$form .= '<input type="submit" value="'.$options['submit'].'" />';
 		$form .= '</form>';
-		
+
 		return '<div class="directions">'.$form.'</div>';
 	}
 
 
-	function addInfoContent($con) {
+	public function addInfoContent($con) {
 		$this->infoContents[self::$MARKER_COUNT] = $this->escapeString($con);
 		$event = "
 			gWindowContents".self::$MAP_COUNT.".push(".$this->escapeString($con).");
 			";
 		$this->addCustom($event);
-		
+
 		//TODO: own count?
 		return self::$MARKER_COUNT;
 	}
-	
-	var $setIcons = array(
+
+	public $setIcons = array(
 		'color' => 'http://www.google.com/mapfiles/marker%s.png',
 		'alpha' => 'http://www.google.com/mapfiles/marker%s%s.png',
 		'numeric' => 'http://google-maps-icons.googlecode.com/files/%s%s.png',
 		'special' => 'http://google-maps-icons.googlecode.com/files/%s.png'
 	);
-	
+
 	/**
 	 * get a custom icon set
 	 * @param color: green, red, purple, ... or some special ones like "home", ...
@@ -637,28 +641,28 @@ class GoogleMapV3Helper extends AppHelper {
 /*
 var iconImage = new google.maps.MarkerImage('images/' + images[0] + '.png',
 	new google.maps.Size(iconData[images[0]].width, iconData[images[0]].height),
-	new google.maps.Point(0,0),	
+	new google.maps.Point(0,0),
 	new google.maps.Point(0, 32)
 );
-	
+
 var iconShadow = new google.maps.MarkerImage('images/' + images[1] + '.png',
 	new google.maps.Size(iconData[images[1]].width, iconData[images[1]].height),
 	new google.maps.Point(0,0),
 	new google.maps.Point(0, 32)
 );
-		
+
 var iconShape = {
 	coord: [1, 1, 1, 32, 32, 32, 32, 1],
-	type: 'poly'	
+	type: 'poly'
 };
-*/		
-		
+*/
+
 		$shadow = 'http://www.google.com/mapfiles/shadow50.png';
 		$res = array('url'=>$url, 'icon'=>$this->icon($url, array('size'=>array('width'=>20, 'height'=>34))), 'shadow'=>$this->icon($shadow, array('size'=>array('width'=>37, 'height'=>34), 'shadow'=>array('width'=>10, 'height'=>34))));
 		//$this->icons[$ICON_COUNT] = $res;
 		//$ICON_COUNT++;
 		return $res;
-	} 
+	}
 
 	/**
 	 * @param string $imageUrl (http://...)
@@ -679,14 +683,14 @@ var iconShape = {
 				$shadowOptions['anchor'] = array();
 			}
 			$shadowOptions['anchor'] = array_merge($shadowOptions['anchor'], $last['options']['anchor']);
-			
+
 			$res['shadow'] = $this->icon($shadow, $shadowOptions);
 		}
 		return $res;
 	}
-	
+
 	protected $_iconRemember = array();
-	
+
 	/**
 	 * generate icon object
 	 * @param url (required)
@@ -708,7 +712,7 @@ var iconShape = {
 		}
 		if (empty($options['anchor'])) {
 			$options['anchor']['width'] = intval($options['size']['width']/2);
-			$options['anchor']['height'] = $options['size']['height']; 
+			$options['anchor']['height'] = $options['size']['height'];
 		}
 		if (empty($options['origin'])) {
 			$options['origin']['width'] = $options['origin']['height'] = 0;
@@ -717,8 +721,8 @@ var iconShape = {
 			$options['anchor'] = $options['shadow'];
 		}
 		//pr(returns($options));
-		
-		$icon = 'new google.maps.MarkerImage(\''.$url.'\',  
+
+		$icon = 'new google.maps.MarkerImage(\''.$url.'\',
 	new google.maps.Size('.$options['size']['width'].', '.$options['size']['height'].'),
 	new google.maps.Point('.$options['origin']['width'].', '.$options['origin']['height'].'),
 	new google.maps.Point('.$options['anchor']['width'].', '.$options['anchor']['height'].')
@@ -741,7 +745,7 @@ var iconShape = {
 		$options = array_merge($options,$options);
 
 
-		if(!empty($options['lat']) && !empty($options['lng'])) {
+		if (!empty($options['lat']) && !empty($options['lng'])) {
 			$position = "new google.maps.LatLng(".$options['lat'].", ".$options['lng'].")";
 		} else {
 			$position = " ".$this->name().".getCenter()";
@@ -768,7 +772,7 @@ var iconShape = {
 	 */
 	public function addEvent($marker, $infoWindow) {
 		$this->map .= "
-			google.maps.event.addListener(gMarkers[{$marker}], 'click', function(){
+			google.maps.event.addListener(gMarkers[{$marker}], 'click', function() {
 				gInfoWindows".self::$MAP_COUNT."[$infoWindow].open(".$this->name().", this);
 			});
 		";
@@ -782,7 +786,7 @@ var iconShape = {
 	 */
 	public function addCustomEvent($marker, $event) {
 		$this->map .= "
-			google.maps.event.addListener(gMarkers".self::$MAP_COUNT."[{$marker}], 'click', function(){
+			google.maps.event.addListener(gMarkers".self::$MAP_COUNT."[{$marker}], 'click', function() {
 				$event
 			});
 		";
@@ -793,10 +797,10 @@ var iconShape = {
 	 * @return void
 	 * 2010-12-18 ms
 	 */
-	function addCustom($js) {
+	public function addCustom($js) {
 		$this->map .= $js;
 	}
-	
+
 	/**
 	 * @param string $content (html/text)
 	 * @param int $infoWindowCount
@@ -824,37 +828,37 @@ var iconShape = {
 		$script='<script type="text/javascript">
 		'.$this->_arrayToObject('matching', $this->matching, false, true).'
 		'.$this->_arrayToObject('gIcons'.self::$MAP_COUNT, $this->icons, false, false).'
-		
-	jQuery(function(){
+
+	jQuery(function() {
 		';
 
 		$script .= $this->map;
 		if ($this->_currentOptions['geolocate']) {
 			$script .= $this->_geolocate();
 		}
-		
-		if($this->_currentOptions['showMarker'] && !empty($this->markers) && is_array($this->markers)){
+
+		if ($this->_currentOptions['showMarker'] && !empty($this->markers) && is_array($this->markers)) {
 			$script .= implode($this->markers, " ");
 		}
 
-		if($this->_currentOptions['autoCenter']) {
+		if ($this->_currentOptions['autoCenter']) {
 			$script .= $this->_autoCenter();
-		}	
+		}
 		$script .= '
-		
+
 	});
 </script>';
 		self::$MAP_COUNT++;
 		return $script;
 	}
-	
+
 	/**
 	 * set a custom geolocate callback
 	 * @param string $customJs
 	 * false: no callback at all
 	 * 2011-03-16 ms
 	 */
-	function geolocateCallback($js) {
+	public function geolocateCallback($js) {
 		if ($js === false) {
 			$this->_currentOptions['callbacks']['geolocate'] = false;
 			return;
@@ -866,47 +870,47 @@ var iconShape = {
 	 * experimental - works in cutting edge browsers like chrome10
 	 * 2011-03-16 ms
 	 */
-	function _geolocate() {
+	public function _geolocate() {
 		return '
 	// Try W3C Geolocation (Preferred)
-  if(navigator.geolocation) {
-    browserSupportFlag = true;
-    navigator.geolocation.getCurrentPosition(function(position) {
-      geolocationCallback(position.coords.latitude, position.coords.longitude);
-    }, function() {
-      handleNoGeolocation(browserSupportFlag);
-    });
-  // Try Google Gears Geolocation
-  } else if (google.gears) {
-    browserSupportFlag = true;
-    var geo = google.gears.factory.create(\'beta.geolocation\');
-    geo.getCurrentPosition(function(position) {
-      geolocationCallback(position.latitude, position.longitude);
-    }, function() {
-      handleNoGeoLocation(browserSupportFlag);
-    });
-  // Browser doesn\'t support Geolocation
-  } else {
-    browserSupportFlag = false;
-    handleNoGeolocation(browserSupportFlag);
-  }
-  
-  function geolocationCallback(lat, lng) {
-  	'.$this->_geolocationCallback().'
-  }
-  
-  function handleNoGeolocation(errorFlag) {
-    if (errorFlag == true) {
-      //alert("Geolocation service failed.");
-    } else {
-      //alert("Your browser doesn\'t support geolocation. We\'ve placed you in Siberia.");
-    }
-    //'.$this->name().'.setCenter(initialLocation);
-  }
+	if (navigator.geolocation) {
+	browserSupportFlag = true;
+	navigator.geolocation.getCurrentPosition(function(position) {
+		geolocationCallback(position.coords.latitude, position.coords.longitude);
+	}, function() {
+		handleNoGeolocation(browserSupportFlag);
+	});
+	// Try Google Gears Geolocation
+	} else if (google.gears) {
+	browserSupportFlag = true;
+	var geo = google.gears.factory.create(\'beta.geolocation\');
+	geo.getCurrentPosition(function(position) {
+		geolocationCallback(position.latitude, position.longitude);
+	}, function() {
+		handleNoGeoLocation(browserSupportFlag);
+	});
+	// Browser doesn\'t support Geolocation
+	} else {
+	browserSupportFlag = false;
+	handleNoGeolocation(browserSupportFlag);
+	}
+
+	function geolocationCallback(lat, lng) {
+		'.$this->_geolocationCallback().'
+	}
+
+	function handleNoGeolocation(errorFlag) {
+	if (errorFlag == true) {
+		//alert("Geolocation service failed.");
+	} else {
+		//alert("Your browser doesn\'t support geolocation. We\'ve placed you in Siberia.");
+	}
+	//'.$this->name().'.setCenter(initialLocation);
+	}
 	';
 	}
-	
-	function _geolocationCallback() {
+
+	public function _geolocationCallback() {
 		if (($js = $this->_currentOptions['callbacks']['geolocate']) === false) {
 			return '';
 		}
@@ -914,7 +918,7 @@ var iconShape = {
 			$js = 'initialLocation = new google.maps.LatLng(lat, lng);
 '.$this->name().'.setCenter(initialLocation);
 ';
-      //return $js;
+		//return $js;
 		}
 		return $js;
 	}
@@ -928,7 +932,7 @@ var iconShape = {
 	protected function _autoCenter() {
 		return '
 		var bounds = new google.maps.LatLngBounds();
-		$.each(gMarkers'.self::$MAP_COUNT.',function (index, marker){ bounds.extend(marker.position);});
+		$.each(gMarkers'.self::$MAP_COUNT.',function (index, marker) { bounds.extend(marker.position);});
 		'.$this->name().'.fitBounds(bounds);
 		';
 	}
@@ -937,11 +941,11 @@ var iconShape = {
 	 * @return json like js string
 	 * 2010-12-17 ms
 	 */
-	private function _mapOptions() {
+	protected function _mapOptions() {
 		$options = array_merge($this->_currentOptions, $this->_currentOptions['map']);
 
 		$mapOptions = array_intersect_key($options, array(
-			'streetViewControl' => null, 
+			'streetViewControl' => null,
 			'navigationControl' => null,
 			'mapTypeControl' => null,
 			'scaleControl' => null,
@@ -951,7 +955,7 @@ var iconShape = {
 		));
 		$res = array();
 		foreach ($mapOptions as $key => $mapOption) {
-			$res[] = $key.': '.$this->Javascript->value($mapOption);
+			$res[] = $key.': '.$this->Js->value($mapOption);
 		}
 		if (empty($options['autoCenter'])) {
 			$res[] = 'center: initialLocation';
@@ -975,8 +979,8 @@ var iconShape = {
 
 		return '{'.implode(', ', $res).'}';
 	}
-	
-	private function _controlOptions($type, $options) {
+
+	protected function _controlOptions($type, $options) {
 		$mapping = array(
 			'nav' => 'NavigationControlStyle',
 			'type' => 'MapTypeControlStyle',
@@ -989,7 +993,7 @@ var iconShape = {
 		if (!empty($options['pos'])) {
 			$res[] = 'position: google.maps.ControlPosition.'.$options['pos'];
 		}
-		
+
 		return '{'.implode(', ', $res).'}';
 	}
 
@@ -1005,11 +1009,11 @@ var iconShape = {
 	 * @param array $linkOptions
 	 * 2011-03-12 ms
 	 */
-	function link($title, $mapOptions = array(), $linkOptions = array()) {
+	public function link($title, $mapOptions = array(), $linkOptions = array()) {
 		return $this->Html->link($title, $this->url($mapOptions), $linkOptions);
 	}
-	
-	
+
+
 	/**
 	 * returns a maps.google url
 	 * @param array options:
@@ -1019,7 +1023,7 @@ var iconShape = {
 	 * @return string link: http://...
 	 * 2010-12-18 ms
 	 */
-	function url($options = array()) {
+	public function url($options = array()) {
 		$link = 'http://maps.google.com/maps?';
 
 		$linkArray = array();
@@ -1037,7 +1041,7 @@ var iconShape = {
 			$linkArray[] = 'daddr='.h($options['to']);
 		}
 
-		if(!empty($options['zoom'])) {
+		if (!empty($options['zoom'])) {
 			$linkArray[] = 'z='.(int)$options['zoom'];
 		}
 		//$linkArray[] = 'f=d';
@@ -1071,8 +1075,8 @@ var iconShape = {
 	 * @return string $imageTag
 	 * 2010-12-18 ms
 	 */
-	function staticMap($options = array(), $attributes = array()) {
-		$defaultAttributes = array('alt' => __('Map', true));
+	public function staticMap($options = array(), $attributes = array()) {
+		$defaultAttributes = array('alt' => __('Map'));
 
 		return $this->Html->image($this->staticMapUrl($options), array_merge($defaultAttributes, $attributes));
 	}
@@ -1084,11 +1088,11 @@ var iconShape = {
 	 * @param array $linkOptions
 	 * 2011-03-12 ms
 	 */
-	function staticMapLink($title, $mapOptions = array(), $linkOptions = array()) {
+	public function staticMapLink($title, $mapOptions = array(), $linkOptions = array()) {
 		return $this->Html->link($title, $this->staticMapUrl($mapOptions), $linkOptions);
 	}
-	
-	
+
+
 	/**
 	 * Create an url to a plain image map
 	 * @param options
@@ -1096,7 +1100,7 @@ var iconShape = {
 	 * @return string $urlOfImage: http://...
 	 * 2010-12-18 ms
 	 */
-	function staticMapUrl($options = array()) {
+	public function staticMapUrl($options = array()) {
 		$map = self::STATIC_API;
 		/*
 		$params = array(
@@ -1113,12 +1117,12 @@ var iconShape = {
 			$params['mobile'] = 'true';
 		}
 		*/
-	
+
 		$defaults = array_merge($this->_defaultOptions, $this->_defaultOptions['staticMap']);
 		$mapOptions = array_merge($defaults, $options);
-		
+
 		$params = array_intersect_key($mapOptions, array(
-			'sensor' => null, 
+			'sensor' => null,
 			'mobile' => null,
 			'format' => null,
 			'size' => null,
@@ -1165,7 +1169,7 @@ var iconShape = {
 				$params['zoom'] = $options['zoom'];
 			}
 		}
-				
+
 		if (array_key_exists($mapOptions['type'], $this->types)) {
 			$params['maptype'] = $this->types[$mapOptions['type']];
 		} else {
@@ -1173,14 +1177,14 @@ var iconShape = {
 		}
 		//unset($options['type']);
 		$params['maptype'] = strtolower($params['maptype']);
-	
+
 
 		# old: {latitude},{longitude},{color}{alpha-character}
 		# new: @see staticMarkers()
 		if (!empty($options['markers'])) {
 			$params['markers'] = $options['markers'];
 		}
-		
+
 		if (!empty($options['paths'])) {
 			$params['path'] = $options['paths'];
 		}
@@ -1216,30 +1220,30 @@ var iconShape = {
 	 * @return string $paths: e.g: color:0x0000FF80|weight:5|37.40303,-122.08334|37.39471,-122.07201|37.40589,-122.06171{|...}
 	 * 2010-12-18 ms
 	 */
-	function staticPaths($pos = array()) {
+	public function staticPaths($pos = array()) {
 		$defaults = array(
 			'color' => 'blue',
 			'weight' => 5 # pixel
 		);
-		
-	
+
+
 		# not a 2-level array? make it one
 		if (!isset($pos[0])) {
 			$pos = array($pos);
-		}	
-		
+		}
+
 		$res = array();
 		foreach ($pos as $p) {
 			$options = array_merge($defaults, $p);
-		
+
 			$markers = $options['path'];
 			unset($options['path']);
-		
+
 			# prepare color
 			if (!empty($options['color'])) {
 				$options['color'] = $this->_prepColor($options['color']);
 			}
-			
+
 			$path = array();
 			foreach ($options as $key => $value) {
 				$path[] = $key.':'.urlencode($value);
@@ -1250,12 +1254,12 @@ var iconShape = {
 					$pos = $pos['lat'].','.$pos['lng'];
 				}
 				$path[] = $pos;
-			}	
+			}
 			$res[] = implode('|', $path);
 		}
 		return $res;
 	}
-	
+
 	/**
 	 * prepare markers for staticMap
 	 * @param array $markerArrays
@@ -1272,15 +1276,15 @@ var iconShape = {
 	 * - icon
 	 * - shadow
 	 * @return array $markers: color:green|label:Z|48,11|Berlin
-	 * 
-	 * NEW: size:mid|color:red|label:E|37.400465,-122.073003|37.437328,-122.159928&markers=size:small|color:blue|37.369110,-122.096034 
+	 *
+	 * NEW: size:mid|color:red|label:E|37.400465,-122.073003|37.437328,-122.159928&markers=size:small|color:blue|37.369110,-122.096034
 	 * OLD: 40.702147,-74.015794,blueS|40.711614,-74.012318,greenG{|...}
 	 * 2010-12-18 ms
 	 */
-	function staticMarkers($pos = array(), $style = array()) {
+	public function staticMarkers($pos = array(), $style = array()) {
 		$markers = array();
 		$verbose = false;
-		
+
 		$defaults = array(
 			'shadow' => 'true',
 			'color' => 'blue',
@@ -1288,17 +1292,17 @@ var iconShape = {
 			'address' => '',
 			'size' => ''
 		);
-		
+
 		# not a 2-level array? make it one
 		if (!isset($pos[0])) {
 			$pos = array($pos);
 		}
-		
+
 		# new in statitV2: separate styles! right now just merged
-		
+
 		foreach ($pos as $p) {
 			$p = array_merge($defaults, $style, $p);
-			
+
 			# adress or lat/lng?
 			if (!empty($p['lat']) && !empty($p['lng'])) {
 				$p['address'] = $p['lat'].','.$p['lng'];
@@ -1306,10 +1310,10 @@ var iconShape = {
 				$p['address'] = $p['address'];
 			}
 			$p['address'] = urlencode($p['address']);
-			
-			
+
+
 			$values = array();
-			
+
 			# prepare color
 			if (!empty($p['color'])) {
 				$p['color'] = $this->_prepColor($p['color']);
@@ -1328,15 +1332,15 @@ var iconShape = {
 			if (!empty($p['icon'])) {
 				$values[] = 'icon:'.urlencode($p['icon']);
 			}
-			$values[] = $p['address'];				
-			
+			$values[] = $p['address'];
+
 			//TODO: icons
 			$markers[] = implode('|', $values);
 		}
-		
+
 		//TODO: shortcut? only possible if no custom params!
 		if ($verbose) {
-			
+
 		}
 		// long: markers=styles1|address1&markers=styles2|address2&...
 		// short: markers=styles,address1|address2|address3|...
@@ -1351,14 +1355,14 @@ var iconShape = {
 	 * @return string $color
 	 * 2010-12-20 ms
 	 */
-	private function _prepColor($color) {
+	protected function _prepColor($color) {
 		if (strpos($color, '#') !== false) {
 			return str_replace('#', '0x', $color);
 		} elseif (is_numeric($color)) {
 			return '0x'.$color;
 		}
 		return $color;
-	} 
+	}
 
 
 /** TODOS/EXP **/
@@ -1387,12 +1391,12 @@ http://google-maps-utility-library-v3.googlecode.com/svn/tags/infobox/
 */
 
 
-	function geocoder() {
+	public function geocoder() {
 		$js = 'var geocoder = new google.maps.Geocoder();';
 		//TODO
-		
+
 	}
-	
+
 	/**
 	 * managing lots of markers!
 	 * @link http://google-maps-utility-library-v3.googlecode.com/svn/tags/markermanager/1.0/docs/examples.html
@@ -1401,7 +1405,7 @@ http://google-maps-utility-library-v3.googlecode.com/svn/tags/infobox/
 	 * @return void
 	 * 2010-12-18 ms
 	 */
-	function setManager() {
+	public function setManager() {
 		$js .= '
 		var mgr'.self::$MAP_COUNT.' = new MarkerManager('.$this->name().');
 		';
@@ -1410,7 +1414,7 @@ http://google-maps-utility-library-v3.googlecode.com/svn/tags/infobox/
 	public function addManagerMarker($marker, $options) {
 		$js = 'mgr'.self::$MAP_COUNT.'.addMarker('.$marker.');';
 	}
-	
+
 
 	/**
 	 * clustering for lots of markers!
@@ -1442,10 +1446,10 @@ http://google-maps-utility-library-v3.googlecode.com/svn/tags/infobox/
 
 
 	public static $flusterScript = '
-function Fluster2(_map,_debug){var map=_map;var projection=new Fluster2ProjectionOverlay(map);var me=this;var clusters=new Object();var markersLeft=new Object();this.debugEnabled=_debug;this.gridSize=60;this.markers=new Array();this.currentZoomLevel=-1;this.styles={0:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m1.png\',textColor:\'#FFFFFF\',width:53,height:52},10:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m2.png\',textColor:\'#FFFFFF\',width:56,height:55},20:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m3.png\',textColor:\'#FFFFFF\',width:66,height:65}};var zoomChangedTimeout=null;function createClusters(){var zoom=map.getZoom();if(clusters[zoom]){me.debug(\'Clusters for zoom level \'+zoom+\' already initialized.\')}else{var clustersThisZoomLevel=new Array();var clusterCount=0;var markerCount=me.markers.length;for(var i=0;i<markerCount;i++){var marker=me.markers[i];var markerPosition=marker.getPosition();var done=false;for(var j=clusterCount-1;j>=0;j--){var cluster=clustersThisZoomLevel[j];if(cluster.contains(markerPosition)){cluster.addMarker(marker);done=true;break}}if(!done){var cluster=new Fluster2Cluster(me,marker);clustersThisZoomLevel.push(cluster);clusterCount++}}clusters[zoom]=clustersThisZoomLevel;me.debug(\'Initialized \'+clusters[zoom].length+\' clusters for zoom level \'+zoom+\'.\')}if(clusters[me.currentZoomLevel]){for(var i=0;i<clusters[me.currentZoomLevel].length;i++){clusters[me.currentZoomLevel][i].hide()}}me.currentZoomLevel=zoom;showClustersInBounds()}function showClustersInBounds(){var mapBounds=map.getBounds();for(var i=0;i<clusters[me.currentZoomLevel].length;i++){var cluster=clusters[me.currentZoomLevel][i];if(mapBounds.contains(cluster.getPosition())){cluster.show()}}}this.zoomChanged=function(){window.clearInterval(zoomChangedTimeout);zoomChangedTimeout=window.setTimeout(createClusters,500)};this.getMap=function(){return map};this.getProjection=function(){return projection.getP()};this.debug=function(message){if(me.debugEnabled){console.log(\'Fluster2: \'+message)}};this.addMarker=function(_marker){me.markers.push(_marker)};this.getStyles=function(){return me.styles};this.initialize=function(){google.maps.event.addListener(map,\'zoom_changed\',this.zoomChanged);google.maps.event.addListener(map,\'dragend\',showClustersInBounds);window.setTimeout(createClusters,1000)}}
-function Fluster2Cluster(_fluster,_marker){var markerPosition=_marker.getPosition();this.fluster=_fluster;this.markers=[];this.bounds=null;this.marker=null;this.lngSum=0;this.latSum=0;this.center=markerPosition;this.map=this.fluster.getMap();var me=this;var projection=_fluster.getProjection();var gridSize=_fluster.gridSize;var position=projection.fromLatLngToDivPixel(markerPosition);var positionSW=new google.maps.Point(position.x-gridSize,position.y+gridSize);var positionNE=new google.maps.Point(position.x+gridSize,position.y-gridSize);this.bounds=new google.maps.LatLngBounds(projection.fromDivPixelToLatLng(positionSW),projection.fromDivPixelToLatLng(positionNE));this.addMarker=function(_marker){this.markers.push(_marker)};this.show=function(){if(this.markers.length==1){this.markers[0].setMap(me.map)}else if(this.markers.length>1){for(var i=0;i<this.markers.length;i++){this.markers[i].setMap(null)}if(this.marker==null){this.marker=new Fluster2ClusterMarker(this.fluster,this);if(this.fluster.debugEnabled){google.maps.event.addListener(this.marker,\'mouseover\',me.debugShowMarkers);google.maps.event.addListener(this.marker,\'mouseout\',me.debugHideMarkers)}}this.marker.show()}};this.hide=function(){if(this.marker!=null){this.marker.hide()}};this.debugShowMarkers=function(){for(var i=0;i<me.markers.length;i++){me.markers[i].setVisible(true)}};this.debugHideMarkers=function(){for(var i=0;i<me.markers.length;i++){me.markers[i].setVisible(false)}};this.getMarkerCount=function(){return this.markers.length};this.contains=function(_position){return me.bounds.contains(_position)};this.getPosition=function(){return this.center};this.getBounds=function(){return this.bounds};this.getMarkerBounds=function(){var bounds=new google.maps.LatLngBounds(me.markers[0].getPosition(),me.markers[0].getPosition());for(var i=1;i<me.markers.length;i++){bounds.extend(me.markers[i].getPosition())}return bounds};this.addMarker(_marker)}
-function Fluster2ClusterMarker(_fluster,_cluster){this.fluster=_fluster;this.cluster=_cluster;this.position=this.cluster.getPosition();this.markerCount=this.cluster.getMarkerCount();this.map=this.fluster.getMap();this.style=null;this.div=null;var styles=this.fluster.getStyles();for(var i in styles){if(this.markerCount>i){this.style=styles[i]}else{break}}google.maps.OverlayView.call(this);this.setMap(this.map);this.draw()};Fluster2ClusterMarker.prototype=new google.maps.OverlayView();Fluster2ClusterMarker.prototype.draw=function(){if(this.div==null){var me=this;this.div=document.createElement(\'div\');this.div.style.position=\'absolute\';this.div.style.width=this.style.width+\'px\';this.div.style.height=this.style.height+\'px\';this.div.style.lineHeight=this.style.height+\'px\';this.div.style.background=\'transparent url("\'+this.style.image+\'") 50% 50% no-repeat\';this.div.style.color=this.style.textColor;this.div.style.textAlign=\'center\';this.div.style.fontFamily=\'Arial, Helvetica\';this.div.style.fontSize=\'11px\';this.div.style.fontWeight=\'bold\';this.div.innerHTML=this.markerCount;this.div.style.cursor=\'pointer\';google.maps.event.addDomListener(this.div,\'click\',function(){me.map.fitBounds(me.cluster.getMarkerBounds())});this.getPanes().overlayLayer.appendChild(this.div)}var position=this.getProjection().fromLatLngToDivPixel(this.position);this.div.style.left=(position.x-parseInt(this.style.width/2))+\'px\';this.div.style.top=(position.y-parseInt(this.style.height/2))+\'px\'};Fluster2ClusterMarker.prototype.hide=function(){this.div.style.display=\'none\'};Fluster2ClusterMarker.prototype.show=function(){this.div.style.display=\'block\'};
-function Fluster2ProjectionOverlay(map){google.maps.OverlayView.call(this);this.setMap(map);this.getP=function(){return this.getProjection()}}Fluster2ProjectionOverlay.prototype=new google.maps.OverlayView();Fluster2ProjectionOverlay.prototype.draw=function(){};
+function Fluster2(_map,_debug) {var map=_map;var projection=new Fluster2ProjectionOverlay(map);var me=this;var clusters=new Object();var markersLeft=new Object();this.debugEnabled=_debug;this.gridSize=60;this.markers=new Array();this.currentZoomLevel=-1;this.styles={0:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m1.png\',textColor:\'#FFFFFF\',width:53,height:52},10:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m2.png\',textColor:\'#FFFFFF\',width:56,height:55},20:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m3.png\',textColor:\'#FFFFFF\',width:66,height:65}};var zoomChangedTimeout=null;function createClusters() {var zoom=map.getZoom();if (clusters[zoom]) {me.debug(\'Clusters for zoom level \'+zoom+\' already initialized.\')}else{var clustersThisZoomLevel=new Array();var clusterCount=0;var markerCount=me.markers.length;for (var i=0;i<markerCount;i++) {var marker=me.markers[i];var markerPosition=marker.getPosition();var done=false;for (var j=clusterCount-1;j>=0;j--) {var cluster=clustersThisZoomLevel[j];if (cluster.contains(markerPosition)) {cluster.addMarker(marker);done=true;break}}if (!done) {var cluster=new Fluster2Cluster(me,marker);clustersThisZoomLevel.push(cluster);clusterCount++}}clusters[zoom]=clustersThisZoomLevel;me.debug(\'Initialized \'+clusters[zoom].length+\' clusters for zoom level \'+zoom+\'.\')}if (clusters[me.currentZoomLevel]) {for (var i=0;i<clusters[me.currentZoomLevel].length;i++) {clusters[me.currentZoomLevel][i].hide()}}me.currentZoomLevel=zoom;showClustersInBounds()}function showClustersInBounds() {var mapBounds=map.getBounds();for (var i=0;i<clusters[me.currentZoomLevel].length;i++) {var cluster=clusters[me.currentZoomLevel][i];if (mapBounds.contains(cluster.getPosition())) {cluster.show()}}}this.zoomChanged=function() {window.clearInterval(zoomChangedTimeout);zoomChangedTimeout=window.setTimeout(createClusters,500)};this.getMap=function() {return map};this.getProjection=function() {return projection.getP()};this.debug=function(message) {if (me.debugEnabled) {console.log(\'Fluster2: \'+message)}};this.addMarker=function(_marker) {me.markers.push(_marker)};this.getStyles=function() {return me.styles};this.initialize=function() {google.maps.event.addListener(map,\'zoom_changed\',this.zoomChanged);google.maps.event.addListener(map,\'dragend\',showClustersInBounds);window.setTimeout(createClusters,1000)}}
+function Fluster2Cluster(_fluster,_marker) {var markerPosition=_marker.getPosition();this.fluster=_fluster;this.markers=[];this.bounds=null;this.marker=null;this.lngSum=0;this.latSum=0;this.center=markerPosition;this.map=this.fluster.getMap();var me=this;var projection=_fluster.getProjection();var gridSize=_fluster.gridSize;var position=projection.fromLatLngToDivPixel(markerPosition);var positionSW=new google.maps.Point(position.x-gridSize,position.y+gridSize);var positionNE=new google.maps.Point(position.x+gridSize,position.y-gridSize);this.bounds=new google.maps.LatLngBounds(projection.fromDivPixelToLatLng(positionSW),projection.fromDivPixelToLatLng(positionNE));this.addMarker=function(_marker) {this.markers.push(_marker)};this.show=function() {if (this.markers.length==1) {this.markers[0].setMap(me.map)}else if (this.markers.length>1) {for (var i=0;i<this.markers.length;i++) {this.markers[i].setMap(null)}if (this.marker==null) {this.marker=new Fluster2ClusterMarker(this.fluster,this);if (this.fluster.debugEnabled) {google.maps.event.addListener(this.marker,\'mouseover\',me.debugShowMarkers);google.maps.event.addListener(this.marker,\'mouseout\',me.debugHideMarkers)}}this.marker.show()}};this.hide=function() {if (this.marker!=null) {this.marker.hide()}};this.debugShowMarkers=function() {for (var i=0;i<me.markers.length;i++) {me.markers[i].setVisible(true)}};this.debugHideMarkers=function() {for (var i=0;i<me.markers.length;i++) {me.markers[i].setVisible(false)}};this.getMarkerCount=function() {return this.markers.length};this.contains=function(_position) {return me.bounds.contains(_position)};this.getPosition=function() {return this.center};this.getBounds=function() {return this.bounds};this.getMarkerBounds=function() {var bounds=new google.maps.LatLngBounds(me.markers[0].getPosition(),me.markers[0].getPosition());for (var i=1;i<me.markers.length;i++) {bounds.extend(me.markers[i].getPosition())}return bounds};this.addMarker(_marker)}
+function Fluster2ClusterMarker(_fluster,_cluster) {this.fluster=_fluster;this.cluster=_cluster;this.position=this.cluster.getPosition();this.markerCount=this.cluster.getMarkerCount();this.map=this.fluster.getMap();this.style=null;this.div=null;var styles=this.fluster.getStyles();for (var i in styles) {if (this.markerCount>i) {this.style=styles[i]}else{break}}google.maps.OverlayView.call(this);this.setMap(this.map);this.draw()};Fluster2ClusterMarker.prototype=new google.maps.OverlayView();Fluster2ClusterMarker.prototype.draw=function() {if (this.div==null) {var me=this;this.div=document.createElement(\'div\');this.div.style.position=\'absolute\';this.div.style.width=this.style.width+\'px\';this.div.style.height=this.style.height+\'px\';this.div.style.lineHeight=this.style.height+\'px\';this.div.style.background=\'transparent url("\'+this.style.image+\'") 50% 50% no-repeat\';this.div.style.color=this.style.textColor;this.div.style.textAlign=\'center\';this.div.style.fontFamily=\'Arial, Helvetica\';this.div.style.fontSize=\'11px\';this.div.style.fontWeight=\'bold\';this.div.innerHTML=this.markerCount;this.div.style.cursor=\'pointer\';google.maps.event.addDomListener(this.div,\'click\',function() {me.map.fitBounds(me.cluster.getMarkerBounds())});this.getPanes().overlayLayer.appendChild(this.div)}var position=this.getProjection().fromLatLngToDivPixel(this.position);this.div.style.left=(position.x-parseInt(this.style.width/2))+\'px\';this.div.style.top=(position.y-parseInt(this.style.height/2))+\'px\'};Fluster2ClusterMarker.prototype.hide=function() {this.div.style.display=\'none\'};Fluster2ClusterMarker.prototype.show=function() {this.div.style.display=\'block\'};
+function Fluster2ProjectionOverlay(map) {google.maps.OverlayView.call(this);this.setMap(map);this.getP=function() {return this.getProjection()}}Fluster2ProjectionOverlay.prototype=new google.maps.OverlayView();Fluster2ProjectionOverlay.prototype.draw=function() {};
 \'';
 
 
@@ -1469,7 +1473,7 @@ function Fluster2ProjectionOverlay(map){google.maps.OverlayView.call(this);this.
 	 * DEPRECATED - use GeocodeLib::distance() instead!
 	 * 2009-03-06 ms
 	 */
-	function distance($pointX, $pointY) {
+	public function distance($pointX, $pointY) {
 		/*
 		$res = 	6371.04 * ACOS( COS( PI()/2 - rad2deg(90 - $pointX['lat'])) *
 				COS( PI()/2 - rad2deg(90 - $pointY['lat'])) *
@@ -1497,7 +1501,7 @@ function Fluster2ProjectionOverlay(map){google.maps.OverlayView.call(this);this.
 		$res .= '};';
 		return $res;
 	}
-	
+
 	protected function _toObjectParams($array, $asString = true, $keyAsString = false) {
 		$pieces = array();
 		foreach ($array as $key => $value) {
@@ -1507,5 +1511,5 @@ function Fluster2ProjectionOverlay(map){google.maps.OverlayView.call(this);this.
 		}
 		return implode(','.PHP_EOL, $pieces);
 	}
-	
+
 }

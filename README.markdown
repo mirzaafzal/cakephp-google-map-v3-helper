@@ -1,6 +1,7 @@
 CakePHP google map v3 helper / wrapper
 ======================================
-v1.1 !!! not backwards compatible to v1.0
+v1.2
+@cakephp 2.0
 
 most important changes
 - link() creates now actual links - use url() for urls
@@ -171,13 +172,13 @@ Test Files
 Test file included (they might not work right away because of special classes and functions)
 
 To test put the helper in 
-/app/plugins/tools/views/helpers/
+/app/Plugin/Tools/View/Helper/
 
 the test file in
-/app/plugins/tools/tests/cases/helpers/
+/app/Plugin/Tools/Test/Case/View/Helper/
 
 open the following url in the browser:
-http://yourdomain/test.php?show=cases&plugin=tools
+http://yourdomain/test.php?show=cases&plugin=Tools
 
 There you will be able to click on the GoogleMapV3 Test File.
 

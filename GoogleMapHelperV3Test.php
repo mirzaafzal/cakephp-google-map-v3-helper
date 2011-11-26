@@ -1,25 +1,26 @@
 <?php
 
 App::import('Helper', 'Tools.GoogleMapV3');
-App::import('Lib', 'Tools.MyCakeTestCase');
+App::uses('MyCakeTestCase', 'Tools.Lib');
+App::uses('View', 'View');
 
-class GoogleMapHelperTest extends MyCakeTestCase {
+class GoogleMapHelperV3Test extends MyCakeTestCase {
 
-	function startCase() {
-		$this->GoogleMapV3 = new GoogleMapV3Helper();
+	public function startTest() {
+		$this->GoogleMapV3 = new GoogleMapV3Helper(new View(null));
 		$this->GoogleMapV3->initHelpers();
 	}
 
-	function tearDown() {
+	public function tearDown() {
 
 	}
 
-	function testObject() {
+	public function testObject() {
 		$this->assertTrue(is_a($this->GoogleMapV3, 'GoogleMapV3Helper'));
 	}
 
 	
-	function testUrlLink() {
+	public function testUrlLink() {
 		echo $this->_header(__FUNCTION__);
 		
 		$url = $this->GoogleMapV3->url(array('to'=>'Munich, Germany'));
@@ -32,7 +33,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 
 	}
 	
-	function testStaticPaths() {
+	public function testStaticPaths() {
 		echo '<h2>Paths</h2>';
 		$m = $this->pathElements = array(
 			array(
@@ -63,7 +64,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 		echo $is;
 	}
 
-	function testStaticMarkers() {
+	public function testStaticMarkers() {
 		echo '<h2>Markers</h2>';
 		$m = $this->markerElements = array(
 			array(
@@ -88,7 +89,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 //	http://maps.google.com/staticmap?size=500x500&maptype=hybrid&markers=color:red|label:S|48.3,11.2&sensor=false
 //	http://maps.google.com/maps/api/staticmap?size=512x512&maptype=roadmap&markers=color:blue|label:S|40.702147,-74.015794&markers=color:green|label:G|40.711614,-74.012318&markers=color:red|color:red|label:C|40.718217,-73.998284&sensor=false
 
-	function testStatic() {
+	public function testStatic() {
 		echo '<h2>StaticMap</h2>';
 		$m = array(
 			array(
@@ -166,7 +167,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 		echo $link;
 	}
 
-	function testMarkerIcons() {
+	public function testMarkerIcons() {
 		$tests = array(
 			array('green', null),
 			array('black', null),
@@ -185,7 +186,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 	 * with default options
 	 * 2010-12-18 ms
 	 */
-	function testDynamic() {
+	public function testDynamic() {
 		echo '<h2>Map 1</h2>';
 		echo '<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>';
 		//echo $this->GoogleMapV3->map($defaul, array('style'=>'width:100%; height: 800px'));
@@ -227,7 +228,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 	 * more than 100 markers and it gets reaaally slow...
 	 * 2010-12-18 ms
 	 */
-	function testDynamic2() {
+	public function testDynamic2() {
 		echo '<h2>Map 2</h2>';
 		$options = array(
 			'zoom'=>6, 'type'=>'H', 
@@ -238,13 +239,13 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 		echo $this->GoogleMapV3->map($options);
 		$this->GoogleMapV3->addMarker(array('lat'=>47.69847,'lng'=>11.9514, 'title'=>'MarkerMUC', 'content'=>'Some more Html-<b>Content</b>'));
 	
-		for($i = 0; $i < 100; $i++) {
+		for ($i = 0; $i < 100; $i++) {
 			$lat = mt_rand(46000, 54000) / 1000;
 			$lng = mt_rand(2000, 20000) / 1000;
 			$this->GoogleMapV3->addMarker(array('id'=>'m'.($i+1), 'lat'=>$lat,'lng'=>$lng, 'title'=>'Marker'.($i+1), 'content'=>'Lat: <b>'.$lat.'</b><br>Lng: <b>'.$lng.'</b>', 'icon'=>'http://google-maps-icons.googlecode.com/files/home.png'));
 		}
 	
-		$js = "$('.mapAnchor').live('click', function(){
+		$js = "$('.mapAnchor').live('click', function() {
 		var id = $(this).attr('rel');
 		
 		var match = matching[id];
@@ -267,7 +268,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 	}
 
 
-	function testDynamic3() {
+	public function testDynamic3() {
 		echo '<h2>Map with Directions</h2>';
 		$options = array(
 			'zoom'=>5, 
