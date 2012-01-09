@@ -54,9 +54,11 @@ Usage
 ------------
 
 Add this to your view (it assumes you already included Jquery!!! If you didnt yet, do that before including the following snippet):
+	
 	<?php
 		echo '<script type="text/javascript" src="'.$this->GoogleMapV3->apiUrl().'"></script>';
 	?>
+	
 Or use "autoScript" => true for the next step.
 
 Firstly create a div for google map. Give it a css height and width:
