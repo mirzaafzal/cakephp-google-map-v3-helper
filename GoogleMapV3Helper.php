@@ -33,8 +33,8 @@ class GoogleMapV3Helper extends AppHelper {
 	public static $INFO_WINDOW_COUNT = 0;
 	public static $INFO_CONTENT_COUNT = 0;
 
-	const API = 'http://maps.google.com/maps/api/js?';
-	const STATIC_API = 'http://maps.google.com/maps/api/staticmap?';
+	const API = 'maps.google.com/maps/api/js?';
+	const STATIC_API = 'maps.google.com/maps/api/staticmap?';
 
 	const TYPE_ROADMAP = 'R';
 	const TYPE_HYBRID = 'H';
@@ -163,6 +163,7 @@ class GoogleMapV3Helper extends AppHelper {
 		'autoCenter' => false, # try to fit all markers in (careful, all zooms values are omitted)
 		'autoScript' => false, # let the helper include the neccessary js script links
 		'inline' => false, # for scripts
+		'https' => null # auto detect
 	);
 
 	protected $_currentOptions =array();
@@ -173,7 +174,7 @@ class GoogleMapV3Helper extends AppHelper {
 
 
 	public function __construct($View = null, $settings = array()) {
-		parent::__construct($View);
+		parent::__construct($View, $settings);
 
 		# read constum config settings
 		$google = (array)Configure::read('Google');
@@ -209,6 +210,7 @@ class GoogleMapV3Helper extends AppHelper {
 		if (!empty($google['staticLng'])) {
 			$this->_defaultOptions['staticMap']['lng'] = $google['staticLng'];
 		}
+		$this->_currentOptions = $this->_defaultOptions;
 	}
 
 
@@ -228,7 +230,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 * 2009-03-09 ms
 	 */
 	public function apiUrl($sensor = false, $api = null, $language = null, $append = null) {
-		$url = self::API;
+		$url = $this->_protocol() . self::API;
 
 		$url .= 'sensor=' . ($sensor ? 'true' : 'false');
 		if (!empty($language)) {
@@ -254,7 +256,8 @@ class GoogleMapV3Helper extends AppHelper {
 
 	public function gearsUrl() {
 		$this->_gearsIncluded = true;
-		return 'http://code.google.com/apis/gears/gears_init.js';
+		$url = $this->_protocol() . 'code.google.com/apis/gears/gears_init.js';
+		return $url;
 	}
 
 
@@ -829,7 +832,7 @@ var iconShape = {
 		'.$this->_arrayToObject('matching', $this->matching, false, true).'
 		'.$this->_arrayToObject('gIcons'.self::$MAP_COUNT, $this->icons, false, false).'
 
-	jQuery(function() {
+	jQuery(document).ready(function() {
 		';
 
 		$script .= $this->map;
@@ -874,25 +877,25 @@ var iconShape = {
 		return '
 	// Try W3C Geolocation (Preferred)
 	if (navigator.geolocation) {
-	browserSupportFlag = true;
-	navigator.geolocation.getCurrentPosition(function(position) {
-		geolocationCallback(position.coords.latitude, position.coords.longitude);
-	}, function() {
-		handleNoGeolocation(browserSupportFlag);
-	});
-	// Try Google Gears Geolocation
+		browserSupportFlag = true;
+		navigator.geolocation.getCurrentPosition(function(position) {
+			geolocationCallback(position.coords.latitude, position.coords.longitude);
+		}, function() {
+			handleNoGeolocation(browserSupportFlag);
+		});
+		// Try Google Gears Geolocation
 	} else if (google.gears) {
-	browserSupportFlag = true;
-	var geo = google.gears.factory.create(\'beta.geolocation\');
-	geo.getCurrentPosition(function(position) {
-		geolocationCallback(position.latitude, position.longitude);
-	}, function() {
-		handleNoGeoLocation(browserSupportFlag);
-	});
-	// Browser doesn\'t support Geolocation
+		browserSupportFlag = true;
+		var geo = google.gears.factory.create(\'beta.geolocation\');
+		geo.getCurrentPosition(function(position) {
+			geolocationCallback(position.latitude, position.longitude);
+		}, function() {
+			handleNoGeoLocation(browserSupportFlag);
+		});
+		// Browser doesn\'t support Geolocation
 	} else {
-	browserSupportFlag = false;
-	handleNoGeolocation(browserSupportFlag);
+		browserSupportFlag = false;
+		handleNoGeolocation(browserSupportFlag);
 	}
 
 	function geolocationCallback(lat, lng) {
@@ -916,7 +919,7 @@ var iconShape = {
 		}
 		if ($js === null) {
 			$js = 'initialLocation = new google.maps.LatLng(lat, lng);
-'.$this->name().'.setCenter(initialLocation);
+		'.$this->name().'.setCenter(initialLocation);
 ';
 		//return $js;
 		}
@@ -1024,7 +1027,7 @@ var iconShape = {
 	 * 2010-12-18 ms
 	 */
 	public function url($options = array()) {
-		$link = 'http://maps.google.com/maps?';
+		$link = $this->_protocol() . 'maps.google.com/maps?';
 
 		$linkArray = array();
 		if (!empty($options['from'])) {
@@ -1101,7 +1104,7 @@ var iconShape = {
 	 * 2010-12-18 ms
 	 */
 	public function staticMapUrl($options = array()) {
-		$map = self::STATIC_API;
+		$map = $this->_protocol() . self::STATIC_API;
 		/*
 		$params = array(
 			'sensor' => 'false',
@@ -1208,7 +1211,7 @@ var iconShape = {
 			$pieces[] = $key.'='.$value;
 			//$map .= $key.'='.$value.'&';
 		}
-		return $map.implode('&', $pieces);
+		return $map . implode('&', $pieces);
 	}
 
 	/**
@@ -1346,6 +1349,13 @@ var iconShape = {
 		// short: markers=styles,address1|address2|address3|...
 
 		return $markers;
+	}
+	
+	protected function _protocol() {
+		if (($https = $this->_currentOptions['https']) === null) {
+			$https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on';
+		}
+		return ($https ? 'https' : 'http') . '://';
 	}
 
 	/**
