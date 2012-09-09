@@ -4,33 +4,35 @@ App::import('Helper', 'Tools.GoogleMapV3');
 App::uses('MyCakeTestCase', 'Tools.Lib');
 App::uses('View', 'View');
 
-class GoogleMapV3HelperTest extends MyCakeTestCase {
+class GoogleMapHelperV3Test extends MyCakeTestCase {
 
-	public function startTest() {
+	public function setUp() {
+		parent::setUp();
+
 		$this->GoogleMapV3 = new GoogleMapV3Helper(new View(null));
-		$this->GoogleMapV3->initHelpers();
-	}
-
-	public function tearDown() {
-
 	}
 
 	public function testObject() {
 		$this->assertTrue(is_a($this->GoogleMapV3, 'GoogleMapV3Helper'));
 	}
 
-
-	public function testUrlLink() {
+	public function testMapUrl() {
 		echo $this->_header(__FUNCTION__);
 
 		$url = $this->GoogleMapV3->url(array('to'=>'Munich, Germany'));
-		echo h($url);
-		echo BR.BR;
+		$this->assertEquals('http://maps.google.com/maps?daddr=Munich%2C+Germany', $url);
 
-		$link = $this->GoogleMapV3->link('To Munich!', array('to'=>'Munich, Germany'));
-		echo h($link);
-		echo BR.BR;
+		$url = $this->GoogleMapV3->url(array('to'=>'<München>, Germany'));
+		$this->assertEquals('http://maps.google.com/maps?daddr=%3CM%C3%BCnchen%3E%2C+Germany', $url);
+	}
 
+	public function testMapLink() {
+		echo $this->_header(__FUNCTION__);
+
+		$result = $this->GoogleMapV3->link('<To Munich>!', array('to'=>'<Munich>, Germany'));
+		$expected = '<a href="http://maps.google.com/maps?daddr=%3CMunich%3E%2C+Germany">&lt;To Munich&gt;!</a>';
+		echo $result;
+		$this->assertEquals($expected, $result);
 	}
 
 	public function testStaticPaths() {
@@ -133,7 +135,7 @@ class GoogleMapV3HelperTest extends MyCakeTestCase {
 		echo h($is);
 		echo BR.BR;
 		$attr = array(
-			'title'=>'Yeah'
+			'title'=>'<b>Yeah!</b>'
 		);
 		$is = $this->GoogleMapV3->staticMap($options, $attr);
 		echo h($is).BR;

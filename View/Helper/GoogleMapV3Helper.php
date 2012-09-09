@@ -8,8 +8,10 @@
  *
  * enhanced/modified by Mark Scherer
  */
+ App::uses('AppHelper', 'View/Helper');
+
  /**
- * PHP5 / CakePHP1.3
+ * PHP5 / CakePHP 2.x
  *
  * @author        Mark Scherer
  * @link          http://www.dereuromark.de/2010/12/21/googlemapsv3-cakephp-helper/
@@ -22,8 +24,10 @@
  * CodeAPI: 		http://code.google.com/intl/de-DE/apis/maps/documentation/javascript/basics.html
  * Icons/Images: 	http://gmapicons.googlepages.com/home
  *
- * v1.2
+ * v1.2: Cake2.x
  * 2011-10-12 ms
+ * v1.3: E_STRICT compliant methods (url now mapUrl, link now mapLink)
+ * 2012-08-31 ms
  */
 class GoogleMapV3Helper extends AppHelper {
 
@@ -161,7 +165,7 @@ class GoogleMapV3Helper extends AppHelper {
 			'markercluster' => false, # http://google-maps-utility-library-v3.googlecode.com/svn/tags/markerclusterer/
 		),
 		'autoCenter' => false, # try to fit all markers in (careful, all zooms values are omitted)
-		'autoScript' => false, # let the helper include the neccessary js script links
+		'autoScript' => false, # let the helper include the necessary js script links
 		'inline' => false, # for scripts
 		'https' => null # auto detect
 	);
@@ -254,6 +258,7 @@ class GoogleMapV3Helper extends AppHelper {
 		return $url;
 	}
 
+	//deprecated
 	public function gearsUrl() {
 		$this->_gearsIncluded = true;
 		$url = $this->_protocol() . 'code.google.com/apis/gears/gears_init.js';
@@ -370,7 +375,7 @@ class GoogleMapV3Helper extends AppHelper {
 			//http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js
 		}
 		# still not very common: http://code.google.com/intl/de-DE/apis/maps/documentation/javascript/basics.html
-		if (!empty($options['autoScript']) && !$this->_gearsIncluded) {
+		if (false && !empty($options['autoScript']) && !$this->_gearsIncluded) {
 			$res = $this->Html->script($this->gearsUrl(), array('inline'=>$options['inline']));
 			if ($options['inline']) {
 				echo $res;
@@ -1001,12 +1006,12 @@ var iconShape = {
 	}
 
 
-
-
 /** Google Maps Link **/
 
 	/**
 	 * returns a maps.google link
+	 * TODO: rename due to E_STRICT warning for `url($url, $full)` in mapLink()?
+	 *
 	 * @param string $linkTitle
 	 * @param array $mapOptions
 	 * @param array $linkOptions
@@ -1016,41 +1021,42 @@ var iconShape = {
 		return $this->Html->link($title, $this->url($mapOptions), $linkOptions);
 	}
 
-
 	/**
 	 * returns a maps.google url
+	 * TODO: rename due to E_STRICT warning for `url($url, $full)` in mapUrl()?
+	 *
 	 * @param array options:
-	 * - from: neccessary (address or lat,lng)
-	 * - to: 1x neccessary (address or lat,lng - can be an array of multiple destinations: array('dest1', 'dest2'))
+	 * - from: necessary (address or lat,lng)
+	 * - to: 1x necessary (address or lat,lng - can be an array of multiple destinations: array('dest1', 'dest2'))
 	 * - zoom: optional (defaults to none)
 	 * @return string link: http://...
 	 * 2010-12-18 ms
 	 */
 	public function url($options = array()) {
-		$link = $this->_protocol() . 'maps.google.com/maps?';
+		$url = $this->_protocol() . 'maps.google.com/maps?';
 
-		$linkArray = array();
+		$urlArray = array();
 		if (!empty($options['from'])) {
-			$linkArray[] = 'saddr='.h($options['from']);
+			$urlArray[] = 'saddr=' . urlencode($options['from']);
 		}
 
 		if (!empty($options['to']) && is_array($options['to'])) {
 			$to = array_shift($options['to']);
 			foreach ($options['to'] as $key => $value) {
-				$to .= '+to:'.$value;
+				$to .= '+to:' . $value;
 			}
-			$linkArray[] = 'daddr='.h($to);
+			$urlArray[] = 'daddr=' . urlencode($to);
 		} elseif (!empty($options['to'])) {
-			$linkArray[] = 'daddr='.h($options['to']);
+			$urlArray[] = 'daddr=' . urlencode($options['to']);
 		}
 
 		if (!empty($options['zoom'])) {
-			$linkArray[] = 'z='.(int)$options['zoom'];
+			$urlArray[] = 'z=' . (int)$options['zoom'];
 		}
-		//$linkArray[] = 'f=d';
-		//$linkArray[] = 'hl=de';
-		//$linkArray[] = 'ie=UTF8';
-		return $link.implode('&', $linkArray);
+		//$urlArray[] = 'f=d';
+		//$urlArray[] = 'hl=de';
+		//$urlArray[] = 'ie=UTF8';
+		return $url . h(implode('&', $urlArray));
 	}
 
 /** STATIC MAP **/
@@ -1062,8 +1068,8 @@ var iconShape = {
 	 * Create a plain image map
 	 * @link http://code.google.com/intl/de-DE/apis/maps/documentation/staticmaps
 	 * @param options:
-	 * - string $size [NECCESSARY: VALxVAL, e.g. 500x400 - max 640x640]
-	 * - string $center: x,y or address [NECCESSARY, if no markers are given; else tries to take defaults if available] or TRUE/FALSE
+	 * - string $size [necessary: VALxVAL, e.g. 500x400 - max 640x640]
+	 * - string $center: x,y or address [necessary, if no markers are given; else tries to take defaults if available] or TRUE/FALSE
 	 * - int $zoom [optional; if no markers are given, default value is used; if set to "auto" and ]*
 	 * - array $markers [optional, @see staticPaths() method]
 	 * - string $type [optional: roadmap/hybrid, ...; default:roadmap]
@@ -1149,7 +1155,7 @@ var iconShape = {
 		if (!isset($options['center']) || $options['center'] === false) {
 			# dont use it
 		} elseif ($options['center'] === true && $mapOptions['lat'] !== null && $mapOptions['lng'] !== null) {
-			$params['center'] = (string)$mapOptions['lat'].','.(string)$mapOptions['lng'];
+			$params['center'] = urlencode((string)$mapOptions['lat'] . ',' . (string)$mapOptions['lng']);
 		} elseif (!empty($options['center'])) {
 			$params['center'] = urlencode($options['center']);
 		} /*else {
@@ -1211,7 +1217,7 @@ var iconShape = {
 			$pieces[] = $key.'='.$value;
 			//$map .= $key.'='.$value.'&';
 		}
-		return $map . implode('&', $pieces);
+		return $map . h(implode('&', $pieces));
 	}
 
 	/**
@@ -1266,8 +1272,8 @@ var iconShape = {
 	/**
 	 * prepare markers for staticMap
 	 * @param array $markerArrays
-	 * - lat: xx.xxxxxx (NECCESSARY)
-	 * - lng: xx.xxxxxx (NECCESSARY)
+	 * - lat: xx.xxxxxx (necessary)
+	 * - lng: xx.xxxxxx (necessary)
 	 * - address: (instead of lat/lng)
 	 * - color: red/blue/green (optional, default blue)
 	 * - label: a-z or numbers (optional, default: s)
@@ -1350,7 +1356,7 @@ var iconShape = {
 
 		return $markers;
 	}
-	
+
 	protected function _protocol() {
 		if (($https = $this->_currentOptions['https']) === null) {
 			$https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on';
@@ -1456,9 +1462,9 @@ http://google-maps-utility-library-v3.googlecode.com/svn/tags/infobox/
 
 
 	public static $flusterScript = '
-function Fluster2(_map,_debug) {var map=_map;var projection=new Fluster2ProjectionOverlay(map);var me=this;var clusters=new Object();var markersLeft=new Object();this.debugEnabled=_debug;this.gridSize=60;this.markers=new Array();this.currentZoomLevel=-1;this.styles={0:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m1.png\',textColor:\'#FFFFFF\',width:53,height:52},10:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m2.png\',textColor:\'#FFFFFF\',width:56,height:55},20:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m3.png\',textColor:\'#FFFFFF\',width:66,height:65}};var zoomChangedTimeout=null;function createClusters() {var zoom=map.getZoom();if (clusters[zoom]) {me.debug(\'Clusters for zoom level \'+zoom+\' already initialized.\')}else{var clustersThisZoomLevel=new Array();var clusterCount=0;var markerCount=me.markers.length;for (var i=0;i<markerCount;i++) {var marker=me.markers[i];var markerPosition=marker.getPosition();var done=false;for (var j=clusterCount-1;j>=0;j--) {var cluster=clustersThisZoomLevel[j];if (cluster.contains(markerPosition)) {cluster.addMarker(marker);done=true;break}}if (!done) {var cluster=new Fluster2Cluster(me,marker);clustersThisZoomLevel.push(cluster);clusterCount++}}clusters[zoom]=clustersThisZoomLevel;me.debug(\'Initialized \'+clusters[zoom].length+\' clusters for zoom level \'+zoom+\'.\')}if (clusters[me.currentZoomLevel]) {for (var i=0;i<clusters[me.currentZoomLevel].length;i++) {clusters[me.currentZoomLevel][i].hide()}}me.currentZoomLevel=zoom;showClustersInBounds()}function showClustersInBounds() {var mapBounds=map.getBounds();for (var i=0;i<clusters[me.currentZoomLevel].length;i++) {var cluster=clusters[me.currentZoomLevel][i];if (mapBounds.contains(cluster.getPosition())) {cluster.show()}}}this.zoomChanged=function() {window.clearInterval(zoomChangedTimeout);zoomChangedTimeout=window.setTimeout(createClusters,500)};this.getMap=function() {return map};this.getProjection=function() {return projection.getP()};this.debug=function(message) {if (me.debugEnabled) {console.log(\'Fluster2: \'+message)}};this.addMarker=function(_marker) {me.markers.push(_marker)};this.getStyles=function() {return me.styles};this.initialize=function() {google.maps.event.addListener(map,\'zoom_changed\',this.zoomChanged);google.maps.event.addListener(map,\'dragend\',showClustersInBounds);window.setTimeout(createClusters,1000)}}
+function Fluster2(_map,_debug) {var map=_map;var projection=new Fluster2ProjectionOverlay(map);var me=this;var clusters=new Object();var markersLeft=new Object();this.debugEnabled=_debug;this.gridSize=60;this.markers=new Array();this.currentZoomLevel=-1;this.styles={0:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m1.png\',textColor:\'#FFFFFF\',width:53,height:52},10:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m2.png\',textColor:\'#FFFFFF\',width:56,height:55},20:{image:\'http://gmaps-utility-library.googlecode.com/svn/trunk/markerclusterer/1.0/images/m3.png\',textColor:\'#FFFFFF\',width:66,height:65}};var zoomChangedTimeout=null;function createClusters() {var zoom=map.getZoom();if (clusters[zoom]) {me.debug(\'Clusters for zoom level \'+zoom+\' already initialized.\')} else {var clustersThisZoomLevel=new Array();var clusterCount=0;var markerCount=me.markers.length;for (var i=0;i<markerCount;i++) {var marker=me.markers[i];var markerPosition=marker.getPosition();var done=false;for (var j=clusterCount-1;j>=0;j--) {var cluster=clustersThisZoomLevel[j];if (cluster.contains(markerPosition)) {cluster.addMarker(marker);done=true;break}}if (!done) {var cluster=new Fluster2Cluster(me,marker);clustersThisZoomLevel.push(cluster);clusterCount++}}clusters[zoom]=clustersThisZoomLevel;me.debug(\'Initialized \'+clusters[zoom].length+\' clusters for zoom level \'+zoom+\'.\')}if (clusters[me.currentZoomLevel]) {for (var i=0;i<clusters[me.currentZoomLevel].length;i++) {clusters[me.currentZoomLevel][i].hide()}}me.currentZoomLevel=zoom;showClustersInBounds()}function showClustersInBounds() {var mapBounds=map.getBounds();for (var i=0;i<clusters[me.currentZoomLevel].length;i++) {var cluster=clusters[me.currentZoomLevel][i];if (mapBounds.contains(cluster.getPosition())) {cluster.show()}}}this.zoomChanged=function() {window.clearInterval(zoomChangedTimeout);zoomChangedTimeout=window.setTimeout(createClusters,500)};this.getMap=function() {return map};this.getProjection=function() {return projection.getP()};this.debug=function(message) {if (me.debugEnabled) {console.log(\'Fluster2: \'+message)}};this.addMarker=function(_marker) {me.markers.push(_marker)};this.getStyles=function() {return me.styles};this.initialize=function() {google.maps.event.addListener(map,\'zoom_changed\',this.zoomChanged);google.maps.event.addListener(map,\'dragend\',showClustersInBounds);window.setTimeout(createClusters,1000)}}
 function Fluster2Cluster(_fluster,_marker) {var markerPosition=_marker.getPosition();this.fluster=_fluster;this.markers=[];this.bounds=null;this.marker=null;this.lngSum=0;this.latSum=0;this.center=markerPosition;this.map=this.fluster.getMap();var me=this;var projection=_fluster.getProjection();var gridSize=_fluster.gridSize;var position=projection.fromLatLngToDivPixel(markerPosition);var positionSW=new google.maps.Point(position.x-gridSize,position.y+gridSize);var positionNE=new google.maps.Point(position.x+gridSize,position.y-gridSize);this.bounds=new google.maps.LatLngBounds(projection.fromDivPixelToLatLng(positionSW),projection.fromDivPixelToLatLng(positionNE));this.addMarker=function(_marker) {this.markers.push(_marker)};this.show=function() {if (this.markers.length==1) {this.markers[0].setMap(me.map)}else if (this.markers.length>1) {for (var i=0;i<this.markers.length;i++) {this.markers[i].setMap(null)}if (this.marker==null) {this.marker=new Fluster2ClusterMarker(this.fluster,this);if (this.fluster.debugEnabled) {google.maps.event.addListener(this.marker,\'mouseover\',me.debugShowMarkers);google.maps.event.addListener(this.marker,\'mouseout\',me.debugHideMarkers)}}this.marker.show()}};this.hide=function() {if (this.marker!=null) {this.marker.hide()}};this.debugShowMarkers=function() {for (var i=0;i<me.markers.length;i++) {me.markers[i].setVisible(true)}};this.debugHideMarkers=function() {for (var i=0;i<me.markers.length;i++) {me.markers[i].setVisible(false)}};this.getMarkerCount=function() {return this.markers.length};this.contains=function(_position) {return me.bounds.contains(_position)};this.getPosition=function() {return this.center};this.getBounds=function() {return this.bounds};this.getMarkerBounds=function() {var bounds=new google.maps.LatLngBounds(me.markers[0].getPosition(),me.markers[0].getPosition());for (var i=1;i<me.markers.length;i++) {bounds.extend(me.markers[i].getPosition())}return bounds};this.addMarker(_marker)}
-function Fluster2ClusterMarker(_fluster,_cluster) {this.fluster=_fluster;this.cluster=_cluster;this.position=this.cluster.getPosition();this.markerCount=this.cluster.getMarkerCount();this.map=this.fluster.getMap();this.style=null;this.div=null;var styles=this.fluster.getStyles();for (var i in styles) {if (this.markerCount>i) {this.style=styles[i]}else{break}}google.maps.OverlayView.call(this);this.setMap(this.map);this.draw()};Fluster2ClusterMarker.prototype=new google.maps.OverlayView();Fluster2ClusterMarker.prototype.draw=function() {if (this.div==null) {var me=this;this.div=document.createElement(\'div\');this.div.style.position=\'absolute\';this.div.style.width=this.style.width+\'px\';this.div.style.height=this.style.height+\'px\';this.div.style.lineHeight=this.style.height+\'px\';this.div.style.background=\'transparent url("\'+this.style.image+\'") 50% 50% no-repeat\';this.div.style.color=this.style.textColor;this.div.style.textAlign=\'center\';this.div.style.fontFamily=\'Arial, Helvetica\';this.div.style.fontSize=\'11px\';this.div.style.fontWeight=\'bold\';this.div.innerHTML=this.markerCount;this.div.style.cursor=\'pointer\';google.maps.event.addDomListener(this.div,\'click\',function() {me.map.fitBounds(me.cluster.getMarkerBounds())});this.getPanes().overlayLayer.appendChild(this.div)}var position=this.getProjection().fromLatLngToDivPixel(this.position);this.div.style.left=(position.x-parseInt(this.style.width/2))+\'px\';this.div.style.top=(position.y-parseInt(this.style.height/2))+\'px\'};Fluster2ClusterMarker.prototype.hide=function() {this.div.style.display=\'none\'};Fluster2ClusterMarker.prototype.show=function() {this.div.style.display=\'block\'};
+function Fluster2ClusterMarker(_fluster,_cluster) {this.fluster=_fluster;this.cluster=_cluster;this.position=this.cluster.getPosition();this.markerCount=this.cluster.getMarkerCount();this.map=this.fluster.getMap();this.style=null;this.div=null;var styles=this.fluster.getStyles();for (var i in styles) {if (this.markerCount>i) {this.style=styles[i]} else {break}}google.maps.OverlayView.call(this);this.setMap(this.map);this.draw()};Fluster2ClusterMarker.prototype=new google.maps.OverlayView();Fluster2ClusterMarker.prototype.draw=function() {if (this.div==null) {var me=this;this.div=document.createElement(\'div\');this.div.style.position=\'absolute\';this.div.style.width=this.style.width+\'px\';this.div.style.height=this.style.height+\'px\';this.div.style.lineHeight=this.style.height+\'px\';this.div.style.background=\'transparent url("\'+this.style.image+\'") 50% 50% no-repeat\';this.div.style.color=this.style.textColor;this.div.style.textAlign=\'center\';this.div.style.fontFamily=\'Arial, Helvetica\';this.div.style.fontSize=\'11px\';this.div.style.fontWeight=\'bold\';this.div.innerHTML=this.markerCount;this.div.style.cursor=\'pointer\';google.maps.event.addDomListener(this.div,\'click\',function() {me.map.fitBounds(me.cluster.getMarkerBounds())});this.getPanes().overlayLayer.appendChild(this.div)}var position=this.getProjection().fromLatLngToDivPixel(this.position);this.div.style.left=(position.x-parseInt(this.style.width/2))+\'px\';this.div.style.top=(position.y-parseInt(this.style.height/2))+\'px\'};Fluster2ClusterMarker.prototype.hide=function() {this.div.style.display=\'none\'};Fluster2ClusterMarker.prototype.show=function() {this.div.style.display=\'block\'};
 function Fluster2ProjectionOverlay(map) {google.maps.OverlayView.call(this);this.setMap(map);this.getP=function() {return this.getProjection()}}Fluster2ProjectionOverlay.prototype=new google.maps.OverlayView();Fluster2ProjectionOverlay.prototype.draw=function() {};
 \'';
 

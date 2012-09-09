@@ -1,11 +1,16 @@
-CakePHP google map v3 helper / wrapper
+CakePHP GoogleMapV3 helper / wrapper
 ======================================
-v1.2
-@cakephp 2.0
+v1.3
+@cakephp 2.x
+
+new in v1.3:
+- url() and link() are now mapUrl() and mapLink() to be E_STRICT compliant
+- all displayed urls are now properly escaped using urlencode() and h()
 
 most important changes
-- link() creates now actual links - use url() for urls
-- usage of array containers in order to use custom js more easily 
+- mapLink() creates now actual links - use mapUrl() for urls
+- staticMapUrl() and staticMapLink() for static non-js (image only) maps.
+- usage of array containers in order to use custom js more easily
 - geolocate-feature for state-of-the-art-browsers
 - custom icons
 
@@ -21,44 +26,45 @@ and this depends on use of JQuery
 Dependency
 -----------
 
-CakePHP 1.3
+CakePHP 2.x
 The script depends on using jquery, so please add jquery to the layout
 or add it from
-   
+
    http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js
-   
-   
+
+
 Load Helper
 -----------
-	On the app_contoller.php for globally adding the helper
-	
-	<?php 	
+	In AppController.php for globally adding the helper
+
+	<?php
 		class AppController extends Contoller{
-			public $helpers = array('Html','Javascript','GoogleMapV3');
-		}	
+			public $helpers = array('Html', ..., 'GoogleMapV3');
+		}
 	?>
 
-	load it on a 
-	<?php 	
+	or load it specifically on a
+	<?php
 		class DemoController extends AppContoller{
-			
+
 			function map() {
+				#	code
+
 				$this->helpers[] = 'GoogleMapV3';
-				#	rest of your code		
 			}
-		}	
+		}
 	?>
-	
+
 
 Usage
 ------------
 
 Add this to your view (it assumes you already included Jquery!!! If you didnt yet, do that before including the following snippet):
-	
+
 	<?php
 		echo '<script type="text/javascript" src="'.$this->GoogleMapV3->apiUrl().'"></script>';
 	?>
-	
+
 Or use "autoScript" => true for the next step.
 
 Firstly create a div for google map. Give it a css height and width:
@@ -73,11 +79,11 @@ Firstly create a div for google map. Give it a css height and width:
 	3. Adding events on marker to show infowindow
 	4. Map Links
 	5. StaticMaps
-	
+
 ### 1. Adding single/multiple markers
 
 	To add a marker to the google maps pass an associative array
-	<?php  
+	<?php
 		$options = array(
 	    'lat'=>48.95145,
   		'lng'=>11.6981,
@@ -89,29 +95,29 @@ Firstly create a div for google map. Give it a css height and width:
 		//To add more than one marker use this multiple time
 		// I use it inside a for loop for multiple markers
 		$this->GoogleMapV3->addMarker($options);
-	?>		 
+	?>
 
 ### 2. (OPTIONAL) Adding single/multiple infowindow
 
-	<?php 
+	<?php
 		$options = array(
 		    'lat'=>49.95144,
     		'lng'=>12.6981,
     		'content'=>'Thanks for using this'
 		);
-		
+
 		$this->GoogleMapV3->addInfoWindow($options);
 	?>
 
 ### 3. (OPTIONAL) Adding events on marker to show infowindow
 
-	<?php 
+	<?php
 		$marker = $this->GoogleMapV3->addMarker($options);
 		$infoWindow = $this->GoogleMapV3->addInfoWindow($options);
 		$this->GoogleMapV3->addEvent($marker, $infoWindow);
 	?>
 or
-	<?php 
+	<?php
 		$marker = $this->GoogleMapV3->addMarker($options);
 		$custom = '...'; # js
 		$this->GoogleMapV3->addCustomEvent($marker, $custom);
@@ -131,18 +137,18 @@ finally, now time to make the script
 
 ### 4. Map Links
 
-	<?php 
-		$url = $this->GoogleMapV3->url(array('to'=>'Munich, Germany'));
+	<?php
+		$url = $this->GoogleMapV3->mapUrl(array('to'=>'Munich, Germany'));
 		echo $this->Html->link('Visit Me', $url, array('target'=>'_blank'));
-		
+
 		# or directly:
-		echo $this->GoogleMapV3->link('Visit Me', array('to'=>'Munich, Germany', 'from'=>'Berlin, Germany'), array('target'=>'_blank'));
+		echo $this->GoogleMapV3->mapLink('Visit Me', array('to'=>'Munich, Germany', 'from'=>'Berlin, Germany'), array('target'=>'_blank'));
 	?>
-	
-	
+
+
 ### 5. StaticMaps
 
-	<?php 
+	<?php
 		# a simple image as map
 		$markers = array(
 			array('lat'=>48.2, 'lng'=>11.1),
@@ -157,23 +163,23 @@ finally, now time to make the script
 			'title'=>'Yeah'
 		);
 		echo $this->GoogleMapV3->staticMap($options, $attr);
-		
+
 		# you can even add an url to click on
-		$attr['url'] = $this->GoogleMapV3->url(array('to'=>'Munich, Germany'));
+		$attr['url'] = $this->GoogleMapV3->mapUrl(array('to'=>'Munich, Germany'));
 		echo $this->GoogleMapV3->staticMap($options, $attr);
 	?>
 Instead of markers, paths can also be used.
 Other options
 - visible (locations that have to be in the map)
 - center (without markers)
-	
-	
+
+
 Test Files
 -----------------
 
 Test file included (they might not work right away because of special classes and functions)
 
-To test put the helper in 
+To test put the helper in
 /app/Plugin/Tools/View/Helper/
 
 the test file in
@@ -189,5 +195,5 @@ Maybe some more modification will have to be made. So you can just as well creat
 
 Testfiles are not only a great tool to ensure that the code is fine, it also may help in understanding how the code works.
 So please at least take a look at the code in the test file in order to understand how to use it :)
-If it still doesn't work, feel free to contact me. Also notify me about any mistake i made or enhancement you got! 
+If it still doesn't work, feel free to contact me. Also notify me about any mistake i made or enhancement you got!
 I will be happy to upgrade my code (you may fork the project and send me a direct pull request, as well).
