@@ -1,6 +1,6 @@
 <?php
 
-App::import('Helper', 'Tools.GoogleMapV3');
+App::uses('GoogleMapV3Helper', 'Tools.View/Helper');
 App::uses('MyCakeTestCase', 'Tools.Lib');
 App::uses('View', 'View');
 

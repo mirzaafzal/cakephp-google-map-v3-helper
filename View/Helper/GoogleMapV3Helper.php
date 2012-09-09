@@ -1,7 +1,7 @@
 <?php
 /**
  * This is a CakePHP helper that helps users to integrate google map v3
- * into their application by only writing php code. this helper depends on JQuery
+ * into their application by only writing php code. this helper depends on jQuery
  *
  * @author Rajib Ahmed
  * @version 0.10.12
@@ -821,6 +821,12 @@ var iconShape = {
 	}
 
 
+	/**
+	 * json encode string
+	 *
+	 * @param mixed $content
+	 * @return json
+	 */
 	public function escapeString($content) {
 		return json_encode($content);
 	}
@@ -926,7 +932,6 @@ var iconShape = {
 			$js = 'initialLocation = new google.maps.LatLng(lat, lng);
 		'.$this->name().'.setCenter(initialLocation);
 ';
-		//return $js;
 		}
 		return $js;
 	}
@@ -988,6 +993,10 @@ var iconShape = {
 		return '{'.implode(', ', $res).'}';
 	}
 
+	/**
+	 * @return json like js string
+	 * 2010-12-17 ms
+	 */
 	protected function _controlOptions($type, $options) {
 		$mapping = array(
 			'nav' => 'NavigationControlStyle',
@@ -1015,6 +1024,7 @@ var iconShape = {
 	 * @param string $linkTitle
 	 * @param array $mapOptions
 	 * @param array $linkOptions
+	 * @return string Html link
 	 * 2011-03-12 ms
 	 */
 	public function link($title, $mapOptions = array(), $linkOptions = array()) {
@@ -1095,6 +1105,7 @@ var iconShape = {
 	 * @param string $linkTitle
 	 * @param array $mapOptions
 	 * @param array $linkOptions
+	 * @return string Html link
 	 * 2011-03-12 ms
 	 */
 	public function staticMapLink($title, $mapOptions = array(), $linkOptions = array()) {
@@ -1357,6 +1368,11 @@ var iconShape = {
 		return $markers;
 	}
 
+	/**
+	 * Ensure that we stay on the appropriate protocol
+	 *
+	 * @return string protocol base (including ://)
+	 */
 	protected function _protocol() {
 		if (($https = $this->_currentOptions['https']) === null) {
 			$https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on';
@@ -1508,8 +1524,6 @@ function Fluster2ProjectionOverlay(map) {google.maps.OverlayView.call(this);this
 
 		return ceil($res);
 	}
-
-
 
 	protected function _arrayToObject($name, $array, $asString = true, $keyAsString = false) {
 		$res = 'var '.$name.' = {'.PHP_EOL;
