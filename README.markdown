@@ -21,7 +21,7 @@ for most current manual see
 Introduction
 ------------
 This is a helper that is made upon google maps api version >= 3.0
-and this depends on use of JQuery
+and this depends on use of jQuery
 
 Dependency
 -----------
@@ -59,7 +59,7 @@ Load Helper
 Usage
 ------------
 
-Add this to your view (it assumes you already included Jquery!!! If you didnt yet, do that before including the following snippet):
+Add this to your view (it assumes you already included jQuery! If you didnt yet, do that before including the following snippet):
 
 	<?php
 		echo '<script type="text/javascript" src="'.$this->GoogleMapV3->apiUrl().'"></script>';
@@ -179,14 +179,7 @@ Test Files
 
 Test file included (they might not work right away because of special classes and functions)
 
-To test put the helper in
-/app/Plugin/Tools/View/Helper/
-
-the test file in
-/app/Plugin/Tools/Test/Case/View/Helper/
-
-open the following url in the browser:
-http://yourdomain/test.php?show=cases&plugin=Tools
+To display the test cases open the CakePHP TestSuite: http://yourdomain/test.php
 
 There you will be able to click on the GoogleMapV3 Test File.
 
