@@ -870,6 +870,7 @@ var iconShape = {
 	 * set a custom geolocate callback
 	 * @param string $customJs
 	 * false: no callback at all
+	 * @return void
 	 * 2011-03-16 ms
 	 */
 	public function geolocateCallback($js) {
@@ -884,7 +885,7 @@ var iconShape = {
 	 * experimental - works in cutting edge browsers like chrome10
 	 * 2011-03-16 ms
 	 */
-	public function _geolocate() {
+	protected function _geolocate() {
 		return '
 	// Try W3C Geolocation (Preferred)
 	if (navigator.geolocation) {
@@ -924,7 +925,7 @@ var iconShape = {
 	';
 	}
 
-	public function _geolocationCallback() {
+	protected function _geolocationCallback() {
 		if (($js = $this->_currentOptions['callbacks']['geolocate']) === false) {
 			return '';
 		}
@@ -1019,7 +1020,6 @@ var iconShape = {
 
 	/**
 	 * returns a maps.google link
-	 * TODO: rename due to E_STRICT warning for `url($url, $full)` in mapLink()?
 	 *
 	 * @param string $linkTitle
 	 * @param array $mapOptions
@@ -1027,13 +1027,12 @@ var iconShape = {
 	 * @return string Html link
 	 * 2011-03-12 ms
 	 */
-	public function link($title, $mapOptions = array(), $linkOptions = array()) {
-		return $this->Html->link($title, $this->url($mapOptions), $linkOptions);
+	public function mapLink($title, $mapOptions = array(), $linkOptions = array()) {
+		return $this->Html->link($title, $this->mapUrl($mapOptions), $linkOptions);
 	}
 
 	/**
 	 * returns a maps.google url
-	 * TODO: rename due to E_STRICT warning for `url($url, $full)` in mapUrl()?
 	 *
 	 * @param array options:
 	 * - from: necessary (address or lat,lng)
@@ -1042,7 +1041,7 @@ var iconShape = {
 	 * @return string link: http://...
 	 * 2010-12-18 ms
 	 */
-	public function url($options = array()) {
+	public function mapUrl($options = array()) {
 		$url = $this->_protocol() . 'maps.google.com/maps?';
 
 		$urlArray = array();
@@ -1066,7 +1065,7 @@ var iconShape = {
 		//$urlArray[] = 'f=d';
 		//$urlArray[] = 'hl=de';
 		//$urlArray[] = 'ie=UTF8';
-		return $url . h(implode('&', $urlArray));
+		return $url . (implode('&', $urlArray));
 	}
 
 /** STATIC MAP **/
@@ -1228,7 +1227,7 @@ var iconShape = {
 			$pieces[] = $key.'='.$value;
 			//$map .= $key.'='.$value.'&';
 		}
-		return $map . h(implode('&', $pieces));
+		return $map . (implode('&', $pieces));
 	}
 
 	/**

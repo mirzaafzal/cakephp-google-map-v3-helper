@@ -19,18 +19,28 @@ class GoogleMapHelperV3Test extends MyCakeTestCase {
 	public function testMapUrl() {
 		echo $this->_header(__FUNCTION__);
 
-		$url = $this->GoogleMapV3->url(array('to'=>'Munich, Germany'));
+		$url = $this->GoogleMapV3->mapUrl(array('to'=>'Munich, Germany'));
 		$this->assertEquals('http://maps.google.com/maps?daddr=Munich%2C+Germany', $url);
 
-		$url = $this->GoogleMapV3->url(array('to'=>'<München>, Germany'));
+		$url = $this->GoogleMapV3->mapUrl(array('to'=>'<München>, Germany'));
 		$this->assertEquals('http://maps.google.com/maps?daddr=%3CM%C3%BCnchen%3E%2C+Germany', $url);
 	}
 
 	public function testMapLink() {
 		echo $this->_header(__FUNCTION__);
 
-		$result = $this->GoogleMapV3->link('<To Munich>!', array('to'=>'<Munich>, Germany'));
+		$result = $this->GoogleMapV3->mapLink('<To Munich>!', array('to'=>'<Munich>, Germany'));
 		$expected = '<a href="http://maps.google.com/maps?daddr=%3CMunich%3E%2C+Germany">&lt;To Munich&gt;!</a>';
+		echo $result;
+		$this->assertEquals($expected, $result);
+	}
+
+	public function testLinkWithMapUrl() {
+		echo $this->_header(__FUNCTION__);
+
+		$url = $this->GoogleMapV3->mapUrl(array('to'=>'<München>, Germany'));
+		$result = $this->GoogleMapV3->Html->link('Some title', $url);
+		$expected = '<a href="http://maps.google.com/maps?daddr=%3CM%C3%BCnchen%3E%2C+Germany">Some title</a>';
 		echo $result;
 		$this->assertEquals($expected, $result);
 	}
@@ -152,14 +162,14 @@ class GoogleMapHelperV3Test extends MyCakeTestCase {
 		);
 
 
-		$attr = array('url'=>$this->GoogleMapV3->url(array('to'=>'Munich, Germany')));
+		$attr = array('url'=>$this->GoogleMapV3->mapUrl(array('to'=>'Munich, Germany')));
 		$is = $this->GoogleMapV3->staticMap($options, $attr);
 		echo h($is).BR;
 		echo $is;
 
 		echo BR.BR.BR;
 
-		$url = $this->GoogleMapV3->url(array('to'=>'Munich, Germany'));
+		$url = $this->GoogleMapV3->mapUrl(array('to'=>'Munich, Germany'));
 		$attr = array(
 			'title'=>'Yeah'
 		);
@@ -167,6 +177,17 @@ class GoogleMapHelperV3Test extends MyCakeTestCase {
 		$link = $this->GoogleMapV3->Html->link($image, $url, array('escape'=>false, 'target'=>'_blank'));
 		echo h($link).BR;
 		echo $link;
+	}
+
+	public function testStaticMapWithStaticMapLink() {
+		echo '<h2>testStaticMapWithStaticMapLink</h2>';
+		$markers = array();
+		$markers[] = array('lat'=>48.2, 'lng'=>11.1, 'color'=>'red');
+		$mapMarkers = $this->GoogleMapV3->staticMarkers($markers);
+
+		$staticMapUrl = $this->GoogleMapV3->staticMapUrl(array('center'=>48 . ',' . 11, 'markers'=>$mapMarkers,' size'=>'640x510', 'zoom'=>6));
+		echo $this->GoogleMapV3->Html->link('Open Static Map', $staticMapUrl, array('class'=>'staticMap', 'title'=>__('click for full map'))); //, 'escape'=>false
+
 	}
 
 	public function testMarkerIcons() {
